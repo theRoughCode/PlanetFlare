@@ -6,18 +6,20 @@ const protons = require("protons");
 const { Request, Response } = protons(`
 message Request {
   required bytes cId = 1;
+  required bytes signedCId = 2;
+  required bytes pfId = 3;
 }
 
 message Response {
   required bytes cId = 1;
-  required string cksum = 2;
+  required bytes data = 2;
 }
 `);
 
-class RequestProtocol {
+class RetrievalProtocol {
   
-  // Define the codec of our request protocol
-  PROTOCOL = "/planetflare/request/1.0.0";
+  // Define the codec of our retrieve protocol
+  PROTOCOL = "/planetflare/retrieve/1.0.0";
 
   constructor(cdnManager) {
     this.cdnManager = cdnManager;
@@ -33,20 +35,20 @@ class RequestProtocol {
     try {
       await pipe(stream, async function (source) {
         for await (const message of source) {
-          const { cId } = Request.decode(message);
+          const { cId, signedCId, pfId } = Request.decode(message);
           const cIdString = cId.toString();
-          const remotePeerId = connection.remotePeer.toB58String();
+          // const remotePeerId = connection.remotePeer.toB58String();
   
           if (this.cdnManager.hasFile(cIdString)) {
-            const { cksum } = this.cdnManager.getCksum(cIdString);
-            const resp = Response.encode({ cId, cksum });
+            const { data } = this.cdnManager.getFile(cIdString);
+            const resp = Response.encode({ cId, data });
 
             try {
               // Asynchronously send response to client
               const respStream = await connection.newStream([this.PROTOCOL])
               this.send(resp, respStream.stream)
             } catch (err) {
-              console.error('Could not negotiate request protocol stream with client', err);
+              console.error('Could not negotiate retrieval protocol stream with client', err);
             }
           }
         }
@@ -75,4 +77,4 @@ class RequestProtocol {
   };
 }
 
-module.exports = RequestProtocol;
+module.exports = RetrievalProtocol;

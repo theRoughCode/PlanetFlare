@@ -19,7 +19,7 @@ class CDNManager {
   }
 
   getFile(cId) {
-      // return cksum + data
+      // return data
   }
 }
 

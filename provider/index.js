@@ -2,8 +2,7 @@ const IPFS = require('ipfs');
 const planetflareNode = require('./planetflare-node');
 const PubSub = require('./pubsub');
 const CDNManager = require('./cdn-manager');
-const RequestProtocol = require('./protocols/request-protocol');
-const RetrievalProtocol = require('./protocols/retrieve-protocol');
+const RetrievalProtocol = require('./protocols/retrieval-protocol');
 const PaymentProtocol = require('./protocols/payment-protocol');
 
 const main = async () => {
@@ -18,10 +17,6 @@ const main = async () => {
 
     // Initialize CDN Manager
     const cdnManager = new CDNManager(node);
-
-    // Enable request protocol
-    const requestProtocol = new RequestProtocol(cdnManager);
-    node.libp2p.handle(requestProtocol.PROTOCOL, requestProtocol.handler);
 
     // Enable retrieval protocol
     const retrievalProtocol = new RetrievalProtocol(cdnManager);

@@ -18,6 +18,7 @@ contract PlanetFlareCoin {
         address publisher;
         string contentID;
         uint256 deposit;
+        uint256 lastUpdated;
     }
 
     /* Coin Variables */
@@ -89,10 +90,32 @@ contract PlanetFlareCoin {
         return (bounty.id, bounty.publisher, bounty.contentID, bounty.deposit);
     }
 
-    function updateBounty(string memory contentID, uint256 deposit) public returns (bool success) {
+    function createBounty(string memory contentID, uint256 deposit) public returns (uint256 id) {
+        require (deposit <= balances[msg.sender], "Not enough balance");
+
         uint256 bountyID = uint256(keccak256(abi.encode(msg.sender, contentID)));
 
         Bounty storage bounty = bountiesByID[bountyID];
+        require (bountiesByID[bountyID].publisher == address(0), "Bounty already exists");
+
+        bounty.id = bountyID;
+        bounty.publisher = msg.sender;
+        bounty.contentID = contentID;
+        bounty.deposit = deposit;
+        bounty.lastUpdated = now;
+
+        // TODO: append to publisher list
+        emit BountyUpdate(bountyID, msg.sender, contentID, deposit);
+
+        return bountyID;
+    }
+
+    function updateBounty(uint256 bountyID, uint256 deposit) public returns (bool success) {
+        Bounty storage bounty = bountiesByID[bountyID];
+
+        require(bounty.publisher == msg.sender, "Unauthorized update, or bounty does not exist");
+        require(deposit != bounty.deposit, "Unchanged deposit");
+        require (deposit > 0, "Cannot update to 0 deposit, use delete instead");
 
         if (deposit > bounty.deposit) {
             require((deposit - bounty.deposit) <= balances[msg.sender], "Not enough PFC balance");
@@ -101,12 +124,24 @@ contract PlanetFlareCoin {
             balances[msg.sender] += (bounty.deposit - deposit);
         }
 
-        bounty.id = bountyID;
-        bounty.publisher = msg.sender;
-        bounty.contentID = contentID;
         bounty.deposit = deposit;
 
-        emit BountyUpdate(bountyID, msg.sender, contentID, deposit);
+        emit BountyUpdate(bountyID, msg.sender, bounty.contentID, deposit);
+
+        return true;
+    }
+
+    function deleteBounty(uint256 bountyID) public returns (bool success) {
+        Bounty storage bounty = bountiesByID[bountyID];
+
+        require(bounty.publisher == msg.sender, "Unauthorized delete, or bounty does not exist");
+
+        balances[msg.sender] += bounty.deposit;
+        bounty.deposit = 0;
+
+        emit BountyUpdate(bountyID, msg.sender, bounty.contentID, 0);
+
+        bounty.publisher = address(0); // reset, so that creation can be done again
 
         return true;
     }

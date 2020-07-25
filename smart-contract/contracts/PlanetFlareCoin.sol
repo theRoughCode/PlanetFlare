@@ -125,6 +125,7 @@ contract PlanetFlareCoin {
         }
 
         bounty.deposit = deposit;
+        bounty.lastUpdated = now;
 
         emit BountyUpdate(bountyID, msg.sender, bounty.contentID, deposit);
 

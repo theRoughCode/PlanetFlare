@@ -1,21 +1,26 @@
 "use strict";
 const pipe = require("it-pipe");
 const protons = require("protons");
+const { DEFAULT_PAYMENT_STRATEGY } = require("../strategies/payment-strategy");
 
 // Define Protobuf schema
 const { Payment } = protons(`
 message Payment {
-  required bytes token = 1;
+  required string token = 1;
 }
 `);
 
 class PaymentProtocol {
-  
   // Define the codec of our payment protocol
   PROTOCOL = "/planetflare/payment/1.0.0";
 
-  constructor(cdnManager) {
-    this.cdnManager = cdnManager;
+  /**
+   * Initializes the PaymentProtocol class with a given `paymentStrategy`.
+   * @param {Function} paymentStrategy Strategy that takes in { token, peerId } and
+   *                                   handles the management of tokens.
+   */
+  constructor(paymentStrategy = DEFAULT_PAYMENT_STRATEGY) {
+    this.paymentStrategy = paymentStrategy;
   }
 
   /**
@@ -29,12 +34,14 @@ class PaymentProtocol {
       await pipe(stream, async function (source) {
         for await (const message of source) {
           const { token } = Payment.decode(message);
-          const remotePeerId = connection.remotePeer.toB58String();
-          // Do something with token
+          const peerId = connection.remotePeer.toB58String();
+          this.paymentStrategy({ token, peerId }).catch((err) =>
+            console.error(err)
+          );
         }
       });
 
-      // Replies are done on new streams, so let's close this stream so we don't leak it
+      // Close this stream so we don't leak it
       await pipe([], stream);
     } catch (err) {
       console.error(err);

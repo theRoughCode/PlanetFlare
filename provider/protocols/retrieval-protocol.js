@@ -5,19 +5,16 @@ const protons = require("protons");
 // Define Protobuf schema
 const { Request, Response } = protons(`
 message Request {
-  required bytes cId = 1;
-  required bytes signedCId = 2;
-  required bytes pfId = 3;
+  required string cId = 1;
 }
 
 message Response {
-  required bytes cId = 1;
+  required string cId = 1;
   required bytes data = 2;
 }
 `);
 
 class RetrievalProtocol {
-  
   // Define the codec of our retrieve protocol
   PROTOCOL = "/planetflare/retrieve/1.0.0";
 
@@ -35,20 +32,21 @@ class RetrievalProtocol {
     try {
       await pipe(stream, async function (source) {
         for await (const message of source) {
-          const { cId, signedCId, pfId } = Request.decode(message);
-          const cIdString = cId.toString();
+          const { cId } = Request.decode(message);
           // const remotePeerId = connection.remotePeer.toB58String();
-  
-          if (this.cdnManager.hasFile(cIdString)) {
-            const { data } = this.cdnManager.getFile(cIdString);
+
+          if (this.cdnManager.hasFile(cId)) {
+            const { data } = this.cdnManager.getFile(cId);
             const resp = Response.encode({ cId, data });
 
             try {
               // Asynchronously send response to client
-              const respStream = await connection.newStream([this.PROTOCOL])
-              this.send(resp, respStream.stream)
+              await this.send(resp, stream);
             } catch (err) {
-              console.error('Could not negotiate retrieval protocol stream with client', err);
+              console.error(
+                "Could not negotiate retrieval protocol stream with client",
+                err
+              );
             }
           }
         }

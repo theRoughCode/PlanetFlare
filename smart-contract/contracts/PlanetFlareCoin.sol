@@ -7,20 +7,33 @@
 pragma solidity ^0.6.9;
 
 contract PlanetFlareCoin {
-    // events
+    /* Events */
     event Transfer(address indexed _from, address indexed _to, uint256 _value);
     event Approval(address indexed _owner, address indexed _spender, uint256 _value);
+    event BountyUpdate(uint256 indexed bountyID, address indexed publisher, string contentID, uint256 deposit);
 
-    // internal state
+    /* Internal Types */
+    struct Bounty {
+        uint256 bountyID;
+        address publisher;
+        string contentID;
+        uint256 deposit;
+    }
+
+    /* Coin Variables */
     uint256 private _totalSupply = 10000;
     mapping (address => uint256) balances;
     mapping (address => mapping (address => uint256)) allowances;
 
+    /* Bounty Variables */
+    mapping (uint256 => Bounty) bountiesByID;
 
+    /* Constructor */
     constructor() public {
         balances[msg.sender] = _totalSupply;
     }
 
+    /* ERC 20 Implementation */
     function name() public pure returns (string memory) {
         return "PlanetFlareCoin";
     }
@@ -67,5 +80,29 @@ contract PlanetFlareCoin {
 
     function allowance(address owner, address spender) public view returns (uint256 remaining) {
         return allowances[owner][spender];
+    }
+
+    /* Bounty Functions */
+    function updateBounty(string memory contentID, uint256 deposit) public returns (bool success) {
+        uint256 bountyID = uint256(keccak256(abi.encode(msg.sender, contentID)));
+
+        // check if the bounty exists already
+        Bounty storage bounty = bountiesByID[bountyID];
+
+        if (deposit > bounty.deposit) {
+            require((deposit - bounty.deposit) <= balances[msg.sender], "Not enough PFC balance");
+            balances[msg.sender] -= (deposit - bounty.deposit);
+        } else if (deposit < bounty.deposit) {
+            balances[msg.sender] += (bounty.deposit - deposit);
+        }
+
+        bounty.bountyID = bountyID;
+        bounty.publisher = msg.sender;
+        bounty.contentID = contentID;
+        bounty.deposit = deposit;
+
+        emit BountyUpdate(bountyID, msg.sender, contentID, deposit);
+
+        return true;
     }
 }

@@ -14,7 +14,7 @@ contract PlanetFlareCoin {
 
     /* Internal Types */
     struct Bounty {
-        uint256 bountyID;
+        uint256 id;
         address publisher;
         string contentID;
         uint256 deposit;
@@ -82,11 +82,16 @@ contract PlanetFlareCoin {
         return allowances[owner][spender];
     }
 
+
     /* Bounty Functions */
+    function getBounty(uint256 bountyID) public view returns (uint256 id, address publisher, string memory contentID, uint256 deposit) {
+        Bounty memory bounty = bountiesByID[bountyID];
+        return (bounty.id, bounty.publisher, bounty.contentID, bounty.deposit);
+    }
+
     function updateBounty(string memory contentID, uint256 deposit) public returns (bool success) {
         uint256 bountyID = uint256(keccak256(abi.encode(msg.sender, contentID)));
 
-        // check if the bounty exists already
         Bounty storage bounty = bountiesByID[bountyID];
 
         if (deposit > bounty.deposit) {
@@ -96,7 +101,7 @@ contract PlanetFlareCoin {
             balances[msg.sender] += (bounty.deposit - deposit);
         }
 
-        bounty.bountyID = bountyID;
+        bounty.id = bountyID;
         bounty.publisher = msg.sender;
         bounty.contentID = contentID;
         bounty.deposit = deposit;

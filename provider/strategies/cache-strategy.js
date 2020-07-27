@@ -7,6 +7,7 @@ const MESSAGE_TYPE = Message.MessageType;
 const DEFAULT_CACHE_STRATEGY = async (cdnManager, msg, peerId) => {
   switch (msg.type) {
     case MESSAGE_TYPE.GET_VALUE:
+    case MESSAGE_TYPE.ADD_PROVIDER:
       let cid;
       try {
         cid = multihashToCid(msg.key);
@@ -23,8 +24,20 @@ const DEFAULT_CACHE_STRATEGY = async (cdnManager, msg, peerId) => {
         cdnManager.retrieveFileFromRemote(cid, (store = true));
       }
       break;
-
+    case MESSAGE_TYPE.PUT_VALUE:
+      console.log("DHT PUT");
+      break;
+    case MESSAGE_TYPE.GET_PROVIDER:
+      console.log("DHT GET_PROVIDER");
+      break;
+    case MESSAGE_TYPE.FIND_NODE:
+      console.log("DHT FIND_NODE");
+      break;
+    case MESSAGE_TYPE.PING:
+      console.log("DHT PING");
+      break;
     default:
+      console.error("Invalid DHT Message type: ", msg.type);
       break;
   }
 };

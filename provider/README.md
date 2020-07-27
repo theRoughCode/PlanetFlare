@@ -5,6 +5,9 @@
 2. Run `node index.js`.
 3. Voila, your node is up and participating in the PlanetFlare ecosystem!
 
+#### Stopping IPFS node
+If you stop and restart the IPFS node right away, you might run into a "lock already held" error. The program automatically checks for this and tries starting the IPFS node again. To make sure that this error doesn't happen, type in `close` into `stdin` to gracefully shut down the program.
+
 ## Protocols
 ### 1. Retrieval Protocol
 **Protocol**: "/planetflare/retrieve/1.0.0"
@@ -38,3 +41,10 @@ message Payment {
 }
 ```
 2. Provider saves it for future redemption.
+
+### 2. Cache Protocol
+**Protocol**: "/ipfs/kad/1.0.0"
+
+**Purpose**: Listen in on incoming DHT messages and trigger cache strategy.
+
+Currently, only listens for `GET_VALUE` messages.

@@ -1,8 +1,9 @@
 "use strict";
 const pipe = require("it-pipe");
+const lp = require("it-length-prefixed");
 const KadDHT = require("libp2p-kad-dht");
-const { Message } = require('./dht.proto');
-const { DEFAULT_CACHE_STRATEGY } = require('../strategies/cache-strategy');
+const { Message } = require("./dht.proto");
+const { DEFAULT_CACHE_STRATEGY } = require("../strategies/cache-strategy");
 
 class CacheProtocol {
   // Listen in on KAD DHT protocol
@@ -22,16 +23,15 @@ class CacheProtocol {
   handler = async ({ connection, stream }) => {
     const peerId = connection.remotePeer;
     try {
-      await pipe(stream, async function (source) {
+      await pipe(stream, lp.decode(), async (source) => {
         for await (const message of source) {
-          const msg = Message.decode(message);
-          this.cacheStrategy(cdnManager, msg, peerId)
-            .catch(err => console.error(err));
+          // .slice converts from BufferList to Buffer
+          const msg = Message.decode(message.slice());
+          this.cacheStrategy(this.cdnManager, msg, peerId).catch((err) =>
+            console.error(err)
+          );
         }
       });
-
-      // Replies are done on new streams, so let's close this stream so we don't leak it
-      await pipe([], stream);
     } catch (err) {
       console.error(err);
     }

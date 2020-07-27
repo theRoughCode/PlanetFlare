@@ -7,14 +7,13 @@ const [ dbname, password ] = require('./credentials').getCredentials();
 
 const PORT = 3000;
 const uri = `mongodb+srv://pfc:${password}@cluster0.8nmjg.mongodb.net/${dbname}?retryWrites=true&w=majority`;
-const client = new MongoClient(uri, { useNewUrlParser: true });
-const MONGO_COLLECTION = 'devices';
-const mongoClient = new MongoClient(uri);
+const MONGO_COLLECTION = 'token';
+const mongoClient = new MongoClient(uri, { useNewUrlParser: true });
 const mongoConnection = mongoClient.connect();
 
 const app = express();
 app.use(express.json());
-app.use(express.urlencoded());
+app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 
 
@@ -31,18 +30,22 @@ app.get('/get_tokens', (req, res) => {
         tokensBuffer.push(uuid.v4());
     }
 
-    const mongoDocs = tokensBuffer.map(token => {{ tokenName: token }});
-    mongoConnection.then(() => {
-        const db = client.db("test").collection(MONGO_COLLECTION);
+    const mongoDocs = tokensBuffer.map((token, _) => {
+        return {
+            tokenName: token
+        }
+    });
+    mongoConnection.then(err => {
+        const db = mongoClient.db(dbname).collection(MONGO_COLLECTION);
         db.insertMany(mongoDocs, (err, res) => {
             if (err) {
                 console.log(`Error when inserting: ${err}`);
             }
             console.log(`Inserted ${res.insertedCount} tokens.`);
-            db.close();
         });
     });
 
+    console.log('Returning', tokensBuffer);
     res.json(JSON.stringify({'tokens': tokensBuffer}));
 });
 
@@ -57,8 +60,12 @@ app.get('/verify_payment', (req, res) => {
     let successCount = 0;
     console.log(`Received request to pay up to provider ${providerId}`).
 
-    mongoConnection.then(() => {
-        const db = client.db("test").collection(MONGO_COLLECTION);
+    mongoConnection.then(err => {
+        if (err) {
+            console.log(err);
+        }
+
+        const db = mongoClient.db(dbname).collection(MONGO_COLLECTION);
         tokens.forEach(token => {
             db.deleteOne({
                 tokenName: token
@@ -99,6 +106,7 @@ app.post('/delete', (req, res) => {
 app.listen(PORT, () => {
     console.log(`Publisher listening on port ${PORT}`)
 });
+
 
 process.on('uncaughtException', err => {
     console.log(err);

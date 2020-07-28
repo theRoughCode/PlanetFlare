@@ -47,10 +47,10 @@ class CDNManager {
   /**
    * Stores data from file at given `path` in local node.
    */
-  storeFile = async (path, provide = true) => {
+  storeFile = async (path) => {
     try {
       const data = await fs.readFile(path, "utf8");
-      return await this.storeData(data, provide);
+      return await this.storeData(data);
     } catch (err) {
       console.error(`ERROR: Failed to read file from ${path}.`);
       return null;
@@ -61,7 +61,7 @@ class CDNManager {
    * Stores data in local node (wrapper for `ipfs.add`).
    * Data stored are pinned by default.
    */
-  storeData = async (data, provide = true, path = null) => {
+  storeData = async (data, path = null) => {
     if (path != null) {
       data = {
         path,
@@ -71,8 +71,6 @@ class CDNManager {
 
     const file = await this.ipfs.add(data);
     console.log(`Added file: ${file.path}, ${file.cid}`);
-
-    if (provide) await this.provideFile(file.cid);
 
     return file;
   };

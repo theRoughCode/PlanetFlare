@@ -7,8 +7,7 @@ const CacheProtocol = require("./protocols/cache-protocol");
 const PaymentProtocol = require("./protocols/payment-protocol");
 const RetrievalProtocol = require("./protocols/retrieval-protocol");
 
-// Store data in /tmp directory. Data will be deleted on shutdown.
-// TODO: Lock problems
+// Store data in /tmp directory.
 const IPFS_LOCATION = "/tmp/ipfs-planetflare";
 
 const createIPFSNode = async (metricsEnabled) => {
@@ -83,8 +82,9 @@ const main = async () => {
   process.stdin.on("data", async (data) => {
     // Remove trailing newline
     data = data.toString().trim();
+    const [command, ...args] = data.split(" ");
 
-    switch (data) {
+    switch (command) {
       // Shut down node gracefully
       case "close":
         console.log(`Shutting down IPFS node...`);
@@ -103,7 +103,16 @@ const main = async () => {
       // Print bandwidth stats
       case "stats":
         logStats(node);
+        break;
+
+      case "add-html":
+        await cdnManager.storeFile(
+          "C:/Users/Raphael/Documents/School/Hackathons/HackFs/PlanetFlare/provider/index.html"
+        );
+        break;
+
       default:
+        console.log(command, args);
         break;
     }
   });

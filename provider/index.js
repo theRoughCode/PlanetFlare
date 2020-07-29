@@ -59,7 +59,9 @@ const main = async () => {
 
   // Enable cache protocol
   const cacheProtocol = new CacheProtocol(cdnManager);
-  node.libp2p.handle(cacheProtocol.PROTOCOL, cacheProtocol.handler);
+  cacheProtocol.PROTOCOLS.forEach((protocol) =>
+    node.libp2p.handle(protocol, cacheProtocol.handler)
+  );
 
   // Enable payment protocol
   const paymentProtocol = new PaymentProtocol(cdnManager);

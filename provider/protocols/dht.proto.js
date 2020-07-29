@@ -2,7 +2,7 @@
 const protons = require("protons");
 
 // Duplcated from libp2p-kad-dht/src/message/dht.proto.js
-module.exports = protons(`// can't use, because protocol-buffers doesn't support imports
+const { Record, Message } = protons(`// can't use, because protocol-buffers doesn't support imports
 // so we have to duplicate for now :(
 // import "record.proto";
 
@@ -76,3 +76,8 @@ message Message {
   // GET_VALUE, ADD_PROVIDER, GET_PROVIDERS
   repeated Peer providerPeers = 9;
 }`);
+
+module.exports = {
+  DHTRecord: Record,
+  DHTMessage: Message
+};

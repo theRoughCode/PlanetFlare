@@ -27,7 +27,7 @@ const Gossipsub = require('libp2p-gossipsub')
  * @param {libp2pBundle~options} opts The options to use when generating the libp2p node
  * @returns {Libp2p} Our new libp2p node
  */
-const planetflareNode = (metricsEnabled = false) => (opts) => {
+const libp2pConfig = (metricsEnabled = false) => (opts) => {
   // Set convenience variables to clearly showcase some of the useful things that are available
   const peerId = opts.peerId
   const bootstrapList = opts.config.Bootstrap
@@ -98,4 +98,4 @@ const planetflareNode = (metricsEnabled = false) => (opts) => {
   })
 };
 
-module.exports = planetflareNode;
+module.exports = libp2pConfig;

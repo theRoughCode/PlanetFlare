@@ -2,8 +2,9 @@
 
 ### Start running your PlanetFlare Provider IPFS node
 1. Run `npm install`.
-2. Run `node index.js`.
+2. Run `nodemon` or `npm run dev`.
 3. Voila, your node is up and participating in the PlanetFlare ecosystem!
+4. Go to http://localhost.com:3000 to view your provider dashboard.
 
 #### Stopping IPFS node
 If you stop and restart the IPFS node right away, you might run into a "lock already held" error. The program automatically checks for this and tries starting the IPFS node again. To make sure that this error doesn't happen, type in `close` into `stdin` to gracefully shut down the program.

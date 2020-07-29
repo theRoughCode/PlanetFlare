@@ -1,2 +1,3 @@
 /node_modules
-credentials.txt
+mongo-credentials.txt
+hub-credentials.txt

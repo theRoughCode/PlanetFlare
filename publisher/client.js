@@ -48,16 +48,14 @@ const main = async () => {
   const pfcResources = Array.from(document.querySelectorAll("[data-pfc]"));
 
   if (pfcResources.length > 0) {
-    // remainingTokens = await requestTokens(pfcResources.length);
+    remainingTokens = await requestTokens(pfcResources.length);
     getResources(pfcResources);
   }
 };
 
 document.addEventListener("DOMContentLoaded", async () => {
   ipfs = await Ipfs.create({ repo: "ipfs-" + Math.random() });
-
   const status = ipfs.isOnline() ? "online" : "offline";
-
   console.log(`Node status: ${status}`);
 
   main();

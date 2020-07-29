@@ -169,4 +169,6 @@ contract PlanetFlareCoin {
 
         return true;
     }
+
+    /* Payment Channel */
 }

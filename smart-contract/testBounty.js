@@ -11,10 +11,11 @@ let rl = readline.createInterface({
 let web3 = new Web3('ws://localhost:8545')
 
 const PFCContractBuild = JSON.parse(fs.readFileSync('./build/contracts/PlanetFlareCoin.json'));
-console.log(PFCContractBuild.abi);
 
-rl.question('Enter deployed contract address: ', function (contractAddress) {
-    let PlanetFlareContract = new web3.eth.Contract(PFCContractBuild.abi, contractAddress);
-    console.log(PlanetFlareContract);
-    rl.close();
-});
+const contractAddress = fs.readFileSync('./contract-address.txt', 'ascii').trim();
+console.log(contractAddress);
+
+let PlanetFlareContract = new web3.eth.Contract(PFCContractBuild.abi, contractAddress);
+console.log(PlanetFlareContract);
+
+process.exit();

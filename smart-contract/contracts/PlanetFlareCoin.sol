@@ -17,6 +17,7 @@ contract PlanetFlareCoin {
         uint256 id;
         address publisher;
         string contentID;
+        uint256 costPerToken;
         uint256 deposit;
         uint256 lastUpdated;
     }
@@ -86,17 +87,19 @@ contract PlanetFlareCoin {
 
 
     /* Bounty Functions */
-    function getBounty(uint256 bountyID) public view returns (uint256 id, address publisher, string memory contentID, uint256 deposit) {
-        Bounty memory bounty = bountiesByID[bountyID];
-        return (bounty.id, bounty.publisher, bounty.contentID, bounty.deposit);
+    function getBounty(uint256 bountyID) public view returns
+     (uint256 id, address publisher, string memory contentID, uint256 costPerToken, uint256 deposit, uint256 lastUpdated) {
+        Bounty storage bounty = bountiesByID[bountyID];
+        return (bounty.id, bounty.publisher, bounty.contentID, bounty.costPerToken, bounty.deposit, bounty.lastUpdated);
     }
 
     function getBountiesForPublisher(address publisher) public view returns (uint256[] memory) {
         return bountyIDsByPublisher[publisher];
     }
 
-    function createBounty(string memory contentID, uint256 deposit) public returns (uint256 id) {
+    function createBounty(string memory contentID, uint256 costPerToken, uint256 deposit) public returns (uint256 id) {
         require (deposit <= balances[msg.sender], "Not enough balance");
+        require(costPerToken > 0, "Cannot have zero cost bounty");
 
         uint256 bountyID = uint256(keccak256(abi.encode(msg.sender, contentID)));
 
@@ -106,23 +109,24 @@ contract PlanetFlareCoin {
         bounty.id = bountyID;
         bounty.publisher = msg.sender;
         bounty.contentID = contentID;
+        bounty.costPerToken = costPerToken;
         bounty.deposit = deposit;
         bounty.lastUpdated = now;
 
         // TODO: append to publisher list
         uint256[] storage publisherBounties = bountyIDsByPublisher[msg.sender];
         publisherBounties.push(bountyID);
-        
+
         emit BountyUpdate(bountyID, msg.sender, contentID, deposit);
 
         return bountyID;
     }
 
-    function updateBounty(uint256 bountyID, uint256 deposit) public returns (bool success) {
+    function updateBounty(uint256 bountyID, uint256 costPerToken, uint256 deposit) public returns (bool success) {
         Bounty storage bounty = bountiesByID[bountyID];
 
         require(bounty.publisher == msg.sender, "Unauthorized update, or bounty does not exist");
-        require(deposit != bounty.deposit, "Unchanged deposit");
+        require(deposit != bounty.deposit || costPerToken != bounty.costPerToken, "Unchanged bounty");
         require (deposit > 0, "Cannot update to 0 deposit, use delete instead");
 
         if (deposit > bounty.deposit) {
@@ -132,6 +136,7 @@ contract PlanetFlareCoin {
             balances[msg.sender] += (bounty.deposit - deposit);
         }
 
+        bounty.costPerToken = costPerToken;
         bounty.deposit = deposit;
         bounty.lastUpdated = now;
 

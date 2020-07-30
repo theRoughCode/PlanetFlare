@@ -6,7 +6,7 @@ const uuid = require("uuid");
 const cors = require("cors");
 const credentials = require("./credentials");
 const MongoClient = require("mongodb").MongoClient;
-const { Bucket } = require("@textile/hub");
+const BucketHandler = require("bucket-handler");
 
 const PORT = 3000;
 let mongoConnection;
@@ -60,30 +60,30 @@ app.get("/verify_payment", (req, res) => {
   let successCount = 0;
   console.log(`Received request to pay up to provider ${providerId}`).
 
-    mongoConnection.then(err => {
-      if (err) {
-        console.log(err);
-      }
+  mongoConnection.then(err => {
+    if (err) {
+      console.log(err);
+    }
 
-      const db = mongoClient.db(dbname).collection(MONGO_COLLECTION);
-      tokens.forEach(token => {
-        db.deleteOne({
-          tokenName: token
-        }, (err, res) => {
-          if (err) {
-            console.log(`Error when verifying: ${err}`);
-          }
-          if (res.result.n === 0) {
-            console.log(`Provider ${providerId} tried to present incorrect token ${token}!`);
-          } else {
-            successCount += 1;
-          }
-        });
+    const db = mongoClient.db(dbname).collection(MONGO_COLLECTION);
+    tokens.forEach(token => {
+      db.deleteOne({
+        tokenName: token
+      }, (err, res) => {
+        if (err) {
+          console.log(`Error when verifying: ${err}`);
+        }
+        if (res.result.n === 0) {
+          console.log(`Provider ${providerId} tried to present incorrect token ${token}!`);
+        } else {
+          successCount += 1;
+        }
       });
     });
-  /**
-   * <PFC payment integration>
-   */
+  });
+/**
+ * <PFC payment integration>
+ */
 });
 
 /**
@@ -119,12 +119,6 @@ const openMongoConnection = async () => {
  * Sets up a Textile bucket session.  
  */
 const getBucketSession = async () => {
-  const [key, secret] = credentials.getCredentialsTextile();
-  const identity = await credentials.getTextileIdentity();
-  const buckets = await Buckets.withKeyInfo(key);
-
-  await buckets.getToken(identity);
-  return buckets;
 }
 
 const init = async () => {

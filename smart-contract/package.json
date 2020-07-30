@@ -7,6 +7,7 @@
     "test": "test"
   },
   "dependencies": {
+    "ethereumjs-abi": "^0.6.8",
     "web3": "^1.2.11"
   },
   "devDependencies": {},

@@ -31,6 +31,9 @@ contract PlanetFlareCoin {
     mapping(address => uint256[]) bountyIDsByPublisher;
     mapping (uint256 => Bounty) bountiesByID;
 
+    /* Payment Channel Variables */
+    mapping (uint256 => bool) usedNonces;
+
     /* Constructor */
     constructor() public {
         balances[msg.sender] = _totalSupply;
@@ -171,4 +174,64 @@ contract PlanetFlareCoin {
     }
 
     /* Payment Channel */
+    function claimPayment(uint256 bountyID, uint256 amount, uint256 nonce, bytes memory signature) public
+        returns (bool success) {
+        require(!usedNonces[nonce], "Nonce alredy used");
+        usedNonces[nonce] = true;
+
+        Bounty storage bounty = bountiesByID[bountyID];
+        address owner = bounty.publisher;
+        address receiver = msg.sender;
+
+        // this recreates the message that was signed on the client
+        bytes32 message = prefixed(keccak256(abi.encodePacked(msg.sender, bountyID, amount, nonce)));
+
+        require(recoverSigner(message, signature) == owner, "Invalid signature");
+
+        // TODO: handle this edge case
+        require(bounty.deposit > amount, "Not enough deposit left in bounty");
+
+        balances[receiver] += amount;
+        bounty.deposit -= amount;
+
+        emit BountyUpdate(bounty.id, bounty.publisher, bounty.contentID, bounty.deposit);
+        emit Transfer(bounty.publisher, msg.sender, amount);
+
+        return true;
+    }
+
+    /// signature methods.
+    function splitSignature(bytes memory sig)
+        internal
+        pure
+        returns (uint8 v, bytes32 r, bytes32 s)
+    {
+        require(sig.length == 65);
+
+        assembly {
+            // first 32 bytes, after the length prefix.
+            r := mload(add(sig, 32))
+            // second 32 bytes.
+            s := mload(add(sig, 64))
+            // final byte (first byte of the next 32 bytes).
+            v := byte(0, mload(add(sig, 96)))
+        }
+
+        return (v, r, s);
+    }
+
+    function recoverSigner(bytes32 message, bytes memory sig)
+        internal
+        pure
+        returns (address)
+    {
+        (uint8 v, bytes32 r, bytes32 s) = splitSignature(sig);
+
+        return ecrecover(message, v, r, s);
+    }
+
+    /// builds a prefixed hash to mimic the behavior of eth_sign.
+    function prefixed(bytes32 hash) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash));
+    }
 }

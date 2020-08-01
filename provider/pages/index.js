@@ -1,53 +1,154 @@
-import { Component } from "react";
+import { useEffect, useRef } from "react";
 import io from "socket.io-client";
+import clsx from "clsx";
+import { makeStyles } from "@material-ui/core/styles";
+import CssBaseline from "@material-ui/core/CssBaseline";
+import AppBar from "@material-ui/core/AppBar";
+import Toolbar from "@material-ui/core/Toolbar";
+import Typography from "@material-ui/core/Typography";
+import IconButton from "@material-ui/core/IconButton";
+import Badge from "@material-ui/core/Badge";
+import Container from "@material-ui/core/Container";
+import Grid from "@material-ui/core/Grid";
+import Paper from "@material-ui/core/Paper";
+import NotificationsIcon from "@material-ui/icons/Notifications";
+import Balance from "./Balance";
+import Logs from "./Logs";
+import Status from "./Status";
+import Title from "./Title";
 
-class Main extends Component {
-    constructor(props) {
-        super(props);
+const useStyles = makeStyles((theme) => ({
+  appBar: {
+    zIndex: theme.zIndex.drawer + 1,
+    transition: theme.transitions.create(["width", "margin"], {
+      easing: theme.transitions.easing.sharp,
+      duration: theme.transitions.duration.leavingScreen,
+    }),
+  },
+  title: {
+    flexGrow: 1,
+  },
+  appBarSpacer: theme.mixins.toolbar,
+  content: {
+    flexGrow: 1,
+    height: "100vh",
+    overflow: "auto",
+  },
+  paper: {
+    padding: theme.spacing(2),
+    display: "flex",
+    overflow: "auto",
+    flexDirection: "column",
+  },
+  fixedHeight: {
+    height: 240,
+  },
+  logsBackground: {
+    backgroundColor: "black",
+    height: 400,
+  },
+}));
 
-        this.state = {
-            ipfsReady: false,
-            peerId: '',
-            ipfsLocation: '',
-        };
+const MAX_LOGS_SIZE = 100;
+
+export default function Main(props) {
+  const classes = useStyles();
+  const [ipfsReady, setIpfsReady] = React.useState(false);
+  const [peerId, setPeerId] = React.useState("");
+  const [ipfsLocation, setIpfsLocation] = React.useState("");
+  const [logs, setLogs] = React.useState([]);
+  const socketRef = useRef();
+  const logsContainerRef = useRef(null);
+  const fixedHeightPaper = clsx(classes.paper, classes.fixedHeight);
+
+  useEffect(() => {
+    socketRef.current = io();
+
+    socketRef.current.on("status", ({ ready, peerId, location }) => {
+      setIpfsReady(ready);
+      setPeerId(peerId);
+      setIpfsLocation(location);
+    });
+
+    socketRef.current.on("logs", (data) => updateLogs(data));
+
+    return () => socketRef.current.close();
+  });
+
+  useEffect(() => {
+    logsContainerRef.current.scrollTop = logsContainerRef.current.scrollHeight;
+  }, [logs.length]);
+
+  const updateLogs = (newMsg) => {
+    let newLogs = [...logs, newMsg];
+    if (newLogs.length > MAX_LOGS_SIZE) {
+      newLogs = newLogs.slice(-MAX_LOGS_SIZE);
     }
+    setLogs(newLogs);
+  };
 
-    componentDidMount() {
-        this.socket = io();
-        this.socketHandler();
+  React.useEffect(() => {
+    // Remove the server-side injected CSS.
+    const jssStyles = document.querySelector("#jss-server-side");
+    if (jssStyles) {
+      jssStyles.parentElement.removeChild(jssStyles);
     }
+  }, []);
 
-    socketHandler() {
-        this.socket.on('status', ({ ready, peerId, location }) => {
-            this.setState({ ipfsReady: ready, peerId, ipfsLocation: location  });
-        });
-    }
-
-    render() {
-        return (
-            <div>
-                <h1>
-                    <b>Status:</b>
-                    {
-                        (this.state.ipfsReady)
-                            ? 'Ready'
-                            : 'Not ready'
-                    }
-                </h1>
-                <div>
-                    {
-                        (this.state.ipfsReady) && (
-                            <div>
-                                <h2>Peer ID: { this.state.peerId }</h2>
-                                <h2>Location: { this.state.ipfsLocation }</h2>
-                            </div>
-                        )
-                    }
-                </div>
-            </div>
-        );
-    }
-    
+  return (
+    <div>
+      <CssBaseline />
+      <AppBar position="absolute" className={classes.appBar}>
+        <Toolbar>
+          <Typography
+            component="h1"
+            variant="h6"
+            color="inherit"
+            noWrap
+            className={classes.title}
+          >
+            Provider Dashboard
+          </Typography>
+          <IconButton color="inherit">
+            <Badge badgeContent={4} color="secondary">
+              <NotificationsIcon />
+            </Badge>
+          </IconButton>
+        </Toolbar>
+      </AppBar>
+      <main className={classes.content}>
+        <div className={classes.appBarSpacer} />
+        <Container maxWidth="lg" className={classes.container}>
+          <Grid container spacing={3}>
+            {/* IPFS Node status */}
+            <Grid item xs={12} md={8} lg={9}>
+              <Paper className={fixedHeightPaper}>
+                <Status
+                  ipfsReady={ipfsReady}
+                  peerId={peerId}
+                  ipfsLocation={ipfsLocation}
+                />
+              </Paper>
+            </Grid>
+            {/* Current Balance */}
+            <Grid item xs={12} md={4} lg={3}>
+              <Paper className={fixedHeightPaper}>
+                <Balance />
+              </Paper>
+            </Grid>
+            {/* Logs */}
+            <Grid item xs={12}>
+              <Paper
+                ref={logsContainerRef}
+                className={clsx(classes.paper, classes.logsBackground)}
+              >
+                <Logs logs={logs} />
+                {/* <div ref={el => this.logsEnd = el} /> */}
+              </Paper>
+            </Grid>
+          </Grid>
+        </Container>
+      </main>
+    </div>
+  );
 }
-
-export default Main;

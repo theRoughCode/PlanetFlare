@@ -3,6 +3,7 @@ const server = require("http").createServer(app);
 const io = require("socket.io")(server);
 const next = require("next");
 const PlanetFlare = require("./planetflare");
+const { initLogger } = require('./logger');
 
 const dev = process.env.NODE_ENV !== "production";
 const nextApp = next({ dev });
@@ -10,6 +11,7 @@ const nextHandler = nextApp.getRequestHandler();
 
 const port = 3000;
 
+const logger = initLogger(io);
 const planetflare = new PlanetFlare(io);
 planetflare.start();
 

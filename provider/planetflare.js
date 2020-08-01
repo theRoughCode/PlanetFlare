@@ -6,6 +6,7 @@ const CDNManager = require("./cdn-manager");
 const CacheProtocol = require("./protocols/cache-protocol");
 const PaymentProtocol = require("./protocols/payment-protocol");
 const RetrievalProtocol = require("./protocols/retrieval-protocol");
+const { log } = require('./logger');
 
 // Store data in /tmp directory.
 const IPFS_LOCATION = "/tmp/ipfs-planetflare";
@@ -34,7 +35,7 @@ const createIPFSNode = async (metricsEnabled) => {
 const logStats = async (node) => {
   try {
     const stats = await node.stats.bw();
-    console.log(`\nBandwidth Stats: ${JSON.stringify(stats, null, 2)}\n`);
+    log(`\nBandwidth Stats: ${JSON.stringify(stats, null, 2)}\n`);
   } catch (err) {
     console.log("An error occurred trying to check our stats:", err);
   }
@@ -104,15 +105,15 @@ class PlanetFlare {
     switch (command) {
       // Shut down node gracefully
       case "close":
-        console.log(`Shutting down IPFS node...`);
+        log(`Shutting down IPFS node...`);
         this.node
           .stop()
           .then(() => {
-            console.log("Exiting...");
+            log("Exiting...");
             process.exit(0);
           })
           .catch((err) => {
-            console.log(`ERROR: ${err}`);
+            log(`ERROR: ${err}`);
             process.exit(1);
           });
         break;
@@ -129,7 +130,7 @@ class PlanetFlare {
         break;
 
       default:
-        console.log(command, args);
+        log(command, args);
         break;
     }
   };

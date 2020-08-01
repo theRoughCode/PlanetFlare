@@ -5,14 +5,25 @@ class Logger {
     this.io = io;
   }
 
-  log(data) {
-      this.io.emit('logs', data);
+  log(msg, isError = false) {
+    this.io.emit("logs", { msg, isError });
   }
 }
 
+const _toString = (data) => {
+  if (Array.isArray(data)) return `[${data.join(", ")}]`;
+  if (typeof data === "object") return JSON.stringify(data);
+  return String(data);
+};
+
 const log = (...msg) => {
-  if (logger != null) logger.log(msg.map(JSON.stringify).join(" "));
+  if (logger != null) logger.log(msg.map(_toString).join(" "));
   console.log(...msg);
+};
+
+const error = (...msg) => {
+  if (logger != null) logger.log(msg.map(JSON.stringify).join(" "), true);
+  console.error(...msg);
 };
 
 const initLogger = (io) => {
@@ -23,4 +34,5 @@ const initLogger = (io) => {
 module.exports = {
   initLogger,
   log,
+  error,
 };

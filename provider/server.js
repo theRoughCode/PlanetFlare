@@ -11,7 +11,7 @@ const nextHandler = nextApp.getRequestHandler();
 
 const port = 3000;
 
-const logger = initLogger(io);
+initLogger(io);
 const planetflare = new PlanetFlare(io);
 planetflare.start();
 

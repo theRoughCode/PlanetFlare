@@ -56,10 +56,12 @@ class CacheProtocol {
                 break;
             }
 
-            console.log(`incoming new connection over ${protocol} protocol.`);
-            this.cacheStrategy(this.cdnManager, protocol, message, peerId).catch((err) =>
-              console.error(err)
-            );
+            this.cacheStrategy(
+              this.cdnManager,
+              protocol,
+              message,
+              peerId
+            ).catch((err) => console.error(err));
           } catch (err) {
             this.bitswap._receiveError(err);
             break;

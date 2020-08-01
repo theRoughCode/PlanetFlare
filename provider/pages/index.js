@@ -80,11 +80,13 @@ export default function Main(props) {
   }, [logs.length]);
 
   const updateLogs = (newMsg) => {
-    let newLogs = [...logs, newMsg];
-    if (newLogs.length > MAX_LOGS_SIZE) {
-      newLogs = newLogs.slice(-MAX_LOGS_SIZE);
-    }
-    setLogs(newLogs);
+    setLogs((prevLogs) => {
+      let newLogs = [...prevLogs, newMsg];
+      if (newLogs.length > MAX_LOGS_SIZE) {
+        newLogs = newLogs.slice(-MAX_LOGS_SIZE);
+      }
+      return newLogs;
+    });
   };
 
   React.useEffect(() => {
@@ -143,7 +145,6 @@ export default function Main(props) {
                 className={clsx(classes.paper, classes.logsBackground)}
               >
                 <Logs logs={logs} />
-                {/* <div ref={el => this.logsEnd = el} /> */}
               </Paper>
             </Grid>
           </Grid>

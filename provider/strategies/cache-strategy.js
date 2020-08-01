@@ -1,12 +1,12 @@
-const fs = require("fs").promises;
+const { CID } = require("ipfs");
 const KadDHTProtocol = require("libp2p-kad-dht").multicodec;
 const { multihashToCid } = require("../utils");
 const { DHTMessage } = require("../protocols/dht.proto");
-const { CID } = require("ipfs");
+const { log, error } = require("../logger");
 
 const DHT_MESSAGE_TYPE = DHTMessage.MessageType;
 
-const DEFAULT_DHT_STRATEGY = async (cdnManager, message) => {
+const DEFAULT_DHT_STRATEGY = async (cdnManager, message, protocol) => {
   switch (message.type) {
     case DHT_MESSAGE_TYPE.GET_VALUE:
     case DHT_MESSAGE_TYPE.ADD_PROVIDER:
@@ -19,36 +19,52 @@ const DEFAULT_DHT_STRATEGY = async (cdnManager, message) => {
           "ERR_INVALID_CID"
         );
       }
-      console.log(`Requested CID: ${cid}`);
+      log(
+        `incoming new connection over ${protocol} protocol. `,
+        `Requested CID: ${cid}`
+      );
       if (!cdnManager.hasFile(cid)) {
         // Can choose to get data and cache
-        console.log(`Retrieving data with CID: ${cid}`);
+        log(
+          `incoming new connection over ${protocol} protocol. `,
+          `Retrieving data with CID: ${cid}`
+        );
         cdnManager.retrieveFileFromRemote(cid, (store = true));
       }
       break;
     case DHT_MESSAGE_TYPE.PUT_VALUE:
-      console.log("DHT PUT");
+      log(`incoming new connection over ${protocol} protocol. `, "DHT PUT");
       break;
     case DHT_MESSAGE_TYPE.GET_PROVIDER:
-      console.log("DHT GET_PROVIDER");
+      log(
+        `incoming new connection over ${protocol} protocol. `,
+        "DHT GET_PROVIDER"
+      );
       break;
     case DHT_MESSAGE_TYPE.FIND_NODE:
-      console.log("DHT FIND_NODE");
+      log(
+        `incoming new connection over ${protocol} protocol. `,
+        "DHT FIND_NODE"
+      );
       break;
     case DHT_MESSAGE_TYPE.PING:
-      console.log("DHT PING");
+      log(`incoming new connection over ${protocol} protocol. `, "DHT PING");
       break;
     default:
-      console.error("Invalid DHT Message type: ", message.type);
+      error("Invalid DHT Message type: ", message.type);
       break;
   }
 };
 
-const DEFAULT_BITSWAP_STRATEGY = async (cdnManager, message) => {
+const DEFAULT_BITSWAP_STRATEGY = async (cdnManager, message, protocol) => {
   const cids = message.wantlist.entries
     .filter((entry) => entry.wantType === 0)
     .map((entry) => multihashToCid(new CID(entry.block).multihash));
-  console.log("Bitswap CIDs: ", cids);
+  log(
+    `incoming new connection over ${protocol} protocol. `,
+    "Bitswap CIDs: ",
+    cids
+  );
 };
 
 const DEFAULT_CACHE_STRATEGY = async (
@@ -59,11 +75,11 @@ const DEFAULT_CACHE_STRATEGY = async (
 ) => {
   switch (protocol) {
     case KadDHTProtocol:
-      DEFAULT_DHT_STRATEGY(cdnManager, message);
+      DEFAULT_DHT_STRATEGY(cdnManager, message, protocol);
       break;
 
     default:
-      DEFAULT_BITSWAP_STRATEGY(cdnManager, message);
+      DEFAULT_BITSWAP_STRATEGY(cdnManager, message, protocol);
       break;
   }
 };

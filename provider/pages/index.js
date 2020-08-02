@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import Web3 from "web3";
 import io from "socket.io-client";
 import clsx from "clsx";
 import { makeStyles } from "@material-ui/core/styles";
@@ -58,6 +59,7 @@ export default function Main(props) {
   const [paymentStrategies, setPaymentStrategies] = React.useState(["DEFAULT"]);
   const [cacheStrategies, setCacheStrategies] = React.useState(["DEFAULT"]);
   const [logs, setLogs] = React.useState([]);
+  const [web3, setWeb3] = React.useState(null);
   const socketRef = useRef();
   const logsContainerRef = useRef(null);
   const fixedHeightPaper = clsx(classes.paper, classes.fixedHeight);
@@ -75,6 +77,12 @@ export default function Main(props) {
 
     socketRef.current.on("logs", (data) => updateLogs(data));
 
+    if (!ethEnabled()) {
+      alert(
+        "Please install an Ethereum-compatible browser or extension like MetaMask to use this dApp!"
+      );
+    }
+
     return () => socketRef.current.close();
   }, []);
 
@@ -90,6 +98,15 @@ export default function Main(props) {
       }
       return newLogs;
     });
+  };
+
+  const ethEnabled = () => {
+    if (window.ethereum) {
+      setWeb3(new Web3(window.ethereum));
+      window.ethereum.enable();
+      return true;
+    }
+    return false;
   };
 
   const startHandler = () => {
@@ -170,7 +187,7 @@ export default function Main(props) {
             {/* Current Balance */}
             <Grid item xs={12} md={4} lg={3}>
               <Paper className={fixedHeightPaper}>
-                <Balance />
+                <Balance web3={web3} />
               </Paper>
             </Grid>
             {/* Logs */}

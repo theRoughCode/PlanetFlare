@@ -1,35 +1,101 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "@material-ui/core/Link";
 import { makeStyles } from "@material-ui/core/styles";
 import Typography from "@material-ui/core/Typography";
+import Popover from "@material-ui/core/Popover";
 import Title from "./Title";
 
-function preventDefault(event) {
-  event.preventDefault();
-}
-
-const useStyles = makeStyles({
+const useStyles = makeStyles((theme) => ({
   depositContext: {
     flex: 1,
   },
-});
+  typography: {
+    padding: theme.spacing(2),
+  },
+}));
 
-export default function Balance() {
+const getDate = () =>
+  new Date().toLocaleString("default", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+
+export default function Balance({ web3 }) {
   const classes = useStyles();
+  const pollInterval = 1000;
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [balance, setBalance] = useState(0);
+  const [account, setAccount] = useState(null);
+  const [date, setDate] = useState("15 March, 2019 13:25:11");
+
+  // Poll for updated account balance
+  useEffect(() => {
+    if (web3 == null) return;
+    const interval = setInterval(async () => {
+      try {
+        const accounts = await web3.eth.getAccounts();
+        if (accounts.length === 0) return;
+        const newAccount = accounts[0];
+        setAccount(newAccount);
+        const newBalance = await web3.eth.getBalance(newAccount);
+        setBalance(newBalance);
+      } catch (error) {
+        console.error("Failed to retrieve account balance.", error);        
+      }
+    }, pollInterval);
+
+    return () => clearInterval(interval);
+  }, [web3]);
+
+  useEffect(() => setDate(getDate()), [account, balance]);
+
+  const handleClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const open = Boolean(anchorEl);
+  const id = open ? "simple-popover" : undefined;
+
   return (
     <React.Fragment>
       <Title>Current Balance</Title>
       <Typography component="p" variant="h4">
-        $3,024.00
+        {`${balance} PFC`}
       </Typography>
       <Typography color="textSecondary" className={classes.depositContext}>
-        on 15 March, 2019
+        on {date}
       </Typography>
-      <div>
-        <Link color="primary" href="#" onClick={preventDefault}>
-          View balance
-        </Link>
-      </div>
+      {account != null && (
+        <div>
+          <Link color="primary" href="#" onClick={handleClick}>
+            View account
+          </Link>
+          <Popover
+            id={id}
+            open={open}
+            anchorEl={anchorEl}
+            onClose={handleClose}
+            anchorOrigin={{
+              vertical: "bottom",
+              horizontal: "center",
+            }}
+            transformOrigin={{
+              vertical: "top",
+              horizontal: "center",
+            }}
+          >
+            <Typography className={classes.typography}>{account}</Typography>
+          </Popover>
+        </div>
+      )}
     </React.Fragment>
   );
 }

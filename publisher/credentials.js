@@ -9,6 +9,11 @@ const getCredentialsMongo = () => {
     return credentials;
 }
 
+const getWeb3PrivateKey = () => {
+  const privateKey = fs.readFileSync('web3-private-key.txt').toString().trim();
+  return privateKey;
+}
+
 /**
  * Reads textile insecure key (first line) and secret (second line)
  * from secret file. 
@@ -21,4 +26,5 @@ const getCredentialsTextile = () => {
 module.exports = {
   getCredentialsMongo,
   getCredentialsTextile,
+  getWeb3PrivateKey
 }

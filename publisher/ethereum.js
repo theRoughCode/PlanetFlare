@@ -1,7 +1,7 @@
 const Web3 = require('web3');
 const abi = require('ethereumjs-abi');
-const credentials = require('credentials');
 const fs = require('fs');
+const credentials = require('./credentials');
 
 const getWeb3Instance = (path) => {
     return new Web3(path || 'ws://localhost:8545');
@@ -9,7 +9,7 @@ const getWeb3Instance = (path) => {
 
 
 const getUnlockedAccount = (web3) => {
-    return web3.privateKeyToAccount(credentials.getWeb3PrivateKey());
+    return web3.eth.accounts.privateKeyToAccount(credentials.getWeb3PrivateKey());
 }
 
 
@@ -18,4 +18,10 @@ const getPlanetFlareContract = (web3) => {
     const contractABI = JSON.parse(fs.readFileSync('./build/contracts/PlanetFlareCoin.json')).abi;
 
     return new web3.eth.Contract(contractABI, contractAddress);
+}
+
+module.exports = {
+    getWeb3Instance,
+    getUnlockedAccount,
+    getPlanetFlareContract
 }

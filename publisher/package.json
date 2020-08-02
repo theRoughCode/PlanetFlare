@@ -12,14 +12,14 @@
   "dependencies": {
     "@textile/hub": "^0.4.1",
     "@textile/threads-core": "^0.1.33",
-    "body-parser": "^1.19.0",
+    "big-integer": "^1.6.48",
     "cors": "^2.8.5",
     "ethereumjs-abi": "^0.6.8",
     "express": "^4.17.1",
     "isomorphic-ws": "^4.0.1",
     "mongodb": "^3.5.9",
     "nodemon": "^2.0.4",
-    "uuid": "^8.2.0",
+    "uuid": "^8.3.0",
     "web3": "^1.2.11",
     "ws": "^7.3.1"
   }

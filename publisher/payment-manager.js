@@ -1,5 +1,6 @@
 const abi = require('ethereumjs-abi');
 const uuid = require('uuid');
+const uuidToDecimal = require('./common/utils').convertUUIDToDecimal;
 
 class PaymentManager {
     constructor(web3, unlockedAccount) {
@@ -7,15 +8,15 @@ class PaymentManager {
         this.account = unlockedAccount;
     }
 
-    createFuturePayment(recipientAddress, bountyID, numTokens) {
+    createFuturePayment(recipientAddress, bountyID) {
         const futurePaymentData = {
             recipeint: recipientAddress,
             bountyID: bountyID,
-            numTokens: numTokens,
-            nonce: uuid.v4()
+            numTokens: 0,
+            nonce: uuidToDecimal(uuid.v4())
         };
 
-        const signature = createSignature(futurePaymentData);
+        const signature = this.createSignature(futurePaymentData);
 
         return {
             data: futurePaymentData,
@@ -28,7 +29,7 @@ class PaymentManager {
         let futurePaymentData = futurePayment.data;
         futurePaymentData.numTokens += additionalNumTokens;
 
-        const signature = createSignature(futurePaymentData);
+        const signature = this.createSignature(futurePaymentData);
 
         return {
             data: futurePaymentData,
@@ -50,7 +51,12 @@ class PaymentManager {
 
         return this.web3.eth.accounts.sign(
             signatureHash, this.account.privateKey
-        );
+        ).signature;
+    }
+
+    verifyFuturePayment(futurePayment) {
+        let signature = this.createSignature(futurePayment.data);
+        return signature == futurePayment.signature;
     }
 }
 

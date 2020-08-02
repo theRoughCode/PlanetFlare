@@ -15,7 +15,6 @@ import NotificationsIcon from "@material-ui/icons/Notifications";
 import Balance from "./Balance";
 import Logs from "./Logs";
 import Status from "./Status";
-import Title from "./Title";
 
 const useStyles = makeStyles((theme) => ({
   appBar: {
@@ -41,7 +40,7 @@ const useStyles = makeStyles((theme) => ({
     flexDirection: "column",
   },
   fixedHeight: {
-    height: 240,
+    height: 280,
   },
   logsBackground: {
     backgroundColor: "black",
@@ -56,6 +55,8 @@ export default function Main(props) {
   const [ipfsReady, setIpfsReady] = React.useState(false);
   const [peerId, setPeerId] = React.useState("");
   const [ipfsLocation, setIpfsLocation] = React.useState("");
+  const [paymentStrategies, setPaymentStrategies] = React.useState(["DEFAULT"]);
+  const [cacheStrategies, setCacheStrategies] = React.useState(["DEFAULT"]);
   const [logs, setLogs] = React.useState([]);
   const socketRef = useRef();
   const logsContainerRef = useRef(null);
@@ -64,16 +65,18 @@ export default function Main(props) {
   useEffect(() => {
     socketRef.current = io();
 
-    socketRef.current.on("status", ({ ready, peerId, location }) => {
-      setIpfsReady(ready);
-      setPeerId(peerId);
-      setIpfsLocation(location);
+    socketRef.current.on("status", (status) => {
+      setIpfsReady(status.ready);
+      setPeerId(status.peerId || "");
+      setIpfsLocation(status.location || "");
+      setPaymentStrategies(status.paymentStrategies || []);
+      setCacheStrategies(status.cacheStrategies || []);
     });
 
     socketRef.current.on("logs", (data) => updateLogs(data));
 
     return () => socketRef.current.close();
-  });
+  }, []);
 
   useEffect(() => {
     logsContainerRef.current.scrollTop = logsContainerRef.current.scrollHeight;
@@ -86,6 +89,32 @@ export default function Main(props) {
         newLogs = newLogs.slice(-MAX_LOGS_SIZE);
       }
       return newLogs;
+    });
+  };
+
+  const startHandler = () => {
+    socketRef.current.emit("start");
+  };
+
+  const shutdownHandler = () => {
+    socketRef.current.emit("shutdown");
+  };
+
+  const paymentStrategyHandler = (paymentStrategy) => {
+    socketRef.current.emit("command", {
+      command: "set-payment-strategy",
+      args: {
+        paymentStrategy,
+      },
+    });
+  };
+
+  const cacheStrategyHandler = (cacheStrategy) => {
+    socketRef.current.emit("command", {
+      command: "set-cache-strategy",
+      args: {
+        cacheStrategy,
+      },
     });
   };
 
@@ -129,6 +158,12 @@ export default function Main(props) {
                   ipfsReady={ipfsReady}
                   peerId={peerId}
                   ipfsLocation={ipfsLocation}
+                  paymentStrategies={paymentStrategies}
+                  paymentStrategyHandler={paymentStrategyHandler}
+                  cacheStrategies={cacheStrategies}
+                  cacheStrategyHandler={cacheStrategyHandler}
+                  startHandler={startHandler}
+                  shutdownHandler={shutdownHandler}
                 />
               </Paper>
             </Grid>

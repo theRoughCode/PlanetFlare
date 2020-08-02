@@ -6,7 +6,9 @@ const CDNManager = require("./cdn-manager");
 const CacheProtocol = require("./protocols/cache-protocol");
 const PaymentProtocol = require("./protocols/payment-protocol");
 const RetrievalProtocol = require("./protocols/retrieval-protocol");
-const { log } = require('./logger');
+const { CACHE_STRATEGIES } = require("./strategies/cache-strategy");
+const { PAYMENT_STRATEGIES } = require("./strategies/payment-strategy");
+const { log, error } = require("./logger");
 
 // Store data in /tmp directory.
 const IPFS_LOCATION = "/tmp/ipfs-planetflare";
@@ -49,9 +51,12 @@ class PlanetFlare {
     this.cdnFiles = [];
     this.location = IPFS_LOCATION;
     this.ready = false;
+    this.paymentStrategy = "DEFAULT";
+    this.cacheStrategy = "DEFAULT";
   }
 
   start = async () => {
+    log(`Starting IPFS node...`);
     // Start up our IPFS node with our custom libp2p wrapper
     this.node = await createIPFSNode(this.metricsEnabled);
     this.peerId = this.node.libp2p.peerId.toB58String();
@@ -72,25 +77,37 @@ class PlanetFlare {
       ready: true,
       peerId: this.peerId,
       location: this.location,
+      paymentStrategies: Object.keys(PAYMENT_STRATEGIES),
+      cacheStrategies: Object.keys(CACHE_STRATEGIES),
     });
+  };
+
+  stop = async () => {
+    log("Shutting down IPFS node...");
+    await this.node.stop();
+    log("Stopped IPFS node...");
+    this.io.emit("status", { ready: false });
   };
 
   initProtocols = () => {
     // Enable cache protocol
-    const cacheProtocol = new CacheProtocol(this.cdnManager);
-    cacheProtocol.PROTOCOLS.forEach((protocol) =>
-      this.node.libp2p.handle(protocol, cacheProtocol.handler)
+    this.cacheProtocol = new CacheProtocol(this.cdnManager, this.cacheStrategy);
+    this.cacheProtocol.PROTOCOLS.forEach((protocol) =>
+      this.node.libp2p.handle(protocol, this.cacheProtocol.handler)
     );
 
     // Enable payment protocol
-    const paymentProtocol = new PaymentProtocol(this.cdnManager);
-    this.node.libp2p.handle(paymentProtocol.PROTOCOL, paymentProtocol.handler);
+    this.paymentProtocol = new PaymentProtocol(this.paymentStrategy);
+    this.node.libp2p.handle(
+      this.paymentProtocol.PROTOCOL,
+      this.paymentProtocol.handler
+    );
 
     // Enable retrieval protocol
-    const retrievalProtocol = new RetrievalProtocol(this.cdnManager);
+    this.retrievalProtocol = new RetrievalProtocol(this.cdnManager);
     this.node.libp2p.handle(
-      retrievalProtocol.PROTOCOL,
-      retrievalProtocol.handler
+      this.retrievalProtocol.PROTOCOL,
+      this.retrievalProtocol.handler
     );
   };
 
@@ -105,17 +122,10 @@ class PlanetFlare {
     switch (command) {
       // Shut down node gracefully
       case "close":
-        log(`Shutting down IPFS node...`);
-        this.node
-          .stop()
-          .then(() => {
-            log("Exiting...");
-            process.exit(0);
-          })
-          .catch((err) => {
-            log(`ERROR: ${err}`);
-            process.exit(1);
-          });
+        this.stop().catch((err) => {
+          error(`ERROR: ${err}`);
+          process.exit(1);
+        });
         break;
 
       // Print bandwidth stats
@@ -127,6 +137,16 @@ class PlanetFlare {
         await this.cdnManager.storeFile(
           "C:/Users/Raphael/Documents/School/Hackathons/HackFs/PlanetFlare/provider/index.html"
         );
+        break;
+
+      case "set-cache-strategy":
+        const { cacheStrategy } = args;
+        this.cacheProtocol.setCacheStrategy(cacheStrategy);
+        break;
+
+      case "set-payment-strategy":
+        const { paymentStrategy } = args;
+        this.paymentProtocol.setPaymentStrategy(paymentStrategy);
         break;
 
       default:

@@ -1,7 +1,8 @@
 "use strict";
 const pipe = require("it-pipe");
 const protons = require("protons");
-const { DEFAULT_PAYMENT_STRATEGY } = require("../strategies/payment-strategy");
+const { PAYMENT_STRATEGIES } = require("../strategies/payment-strategy");
+const { log, error } = require("../logger");
 
 // Define Protobuf schema
 const { Payment } = protons(`
@@ -19,8 +20,17 @@ class PaymentProtocol {
    * @param {Function} paymentStrategy Strategy that takes in { token, peerId } and
    *                                   handles the management of tokens.
    */
-  constructor(paymentStrategy = DEFAULT_PAYMENT_STRATEGY) {
-    this.paymentStrategy = paymentStrategy;
+  constructor(paymentStrategy = "DEFAULT") {
+    this.setPaymentStrategy(paymentStrategy);
+  }
+
+  setPaymentStrategy = (paymentStrategy) => {
+    if (!PAYMENT_STRATEGIES.hasOwnProperty(paymentStrategy)) {
+      error(`Invalid payment strategy: ${paymentStrategy}`);
+      return;
+    }
+    log(`Setting payment strategy to ${paymentStrategy}.`);
+    this.paymentStrategy = PAYMENT_STRATEGIES[paymentStrategy];
   }
 
   /**

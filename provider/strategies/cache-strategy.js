@@ -84,6 +84,16 @@ const DEFAULT_CACHE_STRATEGY = async (
   }
 };
 
+const TEST_CACHE_STRATEGY = async (cdnManager, protocol, message, peerId) => {
+  console.log("Test cache strategy", protocol, message, peerId);
+};
+
+const CACHE_STRATEGIES = {
+  "DEFAULT": DEFAULT_CACHE_STRATEGY,
+  "TEST": TEST_CACHE_STRATEGY,
+};
+
 module.exports = {
   DEFAULT_CACHE_STRATEGY,
+  CACHE_STRATEGIES,
 };

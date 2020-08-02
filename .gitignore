@@ -2,3 +2,5 @@ node_modules
 .next
 smart-contract/build
 smart-contract/contract-address.txt
+publisher/build
+publisher/contract-address.txt

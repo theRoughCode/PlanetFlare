@@ -37,17 +37,21 @@ class PaymentManager {
         }
     }
 
-
-    createSignature(futurePaymentData) {
+    generateSignatureHash(futurePaymentData) {
         const recipientAddress = futurePaymentData.recipeint;
         const bountyID = futurePaymentData.bountyID;
         const numTokens = futurePaymentData.numTokens;
         const nonce = futurePaymentData.nonce;
 
-        const signatureHash  = '0x' + abi.soliditySHA3(
+        return '0x' + abi.soliditySHA3(
             ['address', 'uint256', 'uint256', 'uint256'],
             [recipientAddress, bountyID, numTokens, nonce]
         )
+    }
+
+
+    createSignature(futurePaymentData) {
+        const signatureHash = this.generateSignatureHash(futurePaymentData);
 
         return this.web3.eth.accounts.sign(
             signatureHash, this.account.privateKey
@@ -55,8 +59,13 @@ class PaymentManager {
     }
 
     verifyFuturePayment(futurePayment) {
-        let signature = this.createSignature(futurePayment.data);
-        return signature == futurePayment.signature;
+        const signingAddress = this.web3.eth.accounts.recover(
+            this.generateSignatureHash(futurePayment.data), 
+            futurePayment.signature
+        );
+        console.log(`signing address: ${signingAddress}`);
+        console.log(`public key: ${this.account.address}`);
+        return signingAddress == this.account.address;
     }
 }
 

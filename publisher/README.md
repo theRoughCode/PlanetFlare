@@ -21,3 +21,28 @@ Returns `futurePayment` as JSON, with the following keys:
 If a `futurePayment` was provided as an argument to the function call, the `numTokens` field of `futurePayment.data` is incremented. Otherwise, a new `futurePayment` is created.
 
 Note: The signature *must* be attached to the call if using an existing `futurePayment`
+
+##### Verifying that the signature received from the publisher is valid
+
+```js
+const abi = require('ethereumjs-abi');
+
+function generateSignatureHash(futurePaymentData) {
+    const recipientAddress = futurePaymentData.recipeint;
+    const bountyID = futurePaymentData.bountyID;
+    const numTokens = futurePaymentData.numTokens;
+    const nonce = futurePaymentData.nonce;
+
+    return '0x' + abi.soliditySHA3(
+        ['address', 'uint256', 'uint256', 'uint256'],
+        [recipientAddress, bountyID, numTokens, nonce]
+    )
+}
+
+function verifyFuturePayment(publisherAddress, futurePayment) {
+    const signatureHash = generateSignatureHash(futurePayment.data);
+    const signer = web3.eth.accounts.recover(signatureHash, futurePayment.signature);
+
+    return signer == publisherAddress;
+}
+```

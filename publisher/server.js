@@ -89,8 +89,6 @@ app.post('/verify_payment', (req, res) => {
       console.log('created future payment', futurePayment);
     }
 
-    console.log(`tokens: ${tokens}`);
-
     mongoConnection.then(err => {
       if (err) {
           console.log(err);

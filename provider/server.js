@@ -3,6 +3,9 @@ const server = require("http").createServer(app);
 const io = require("socket.io")(server);
 const next = require("next");
 const PlanetFlare = require("./planetflare");
+const { initLogger } = require("./logger");
+const { CACHE_STRATEGIES } = require("./strategies/cache-strategy");
+const { PAYMENT_STRATEGIES } = require("./strategies/payment-strategy");
 
 const dev = process.env.NODE_ENV !== "production";
 const nextApp = next({ dev });
@@ -10,16 +13,27 @@ const nextHandler = nextApp.getRequestHandler();
 
 const port = 3000;
 
+initLogger(io);
 const planetflare = new PlanetFlare(io);
-planetflare.start();
 
 io.on("connect", (socket) => {
-  if (planetflare.ready)
+  if (planetflare.ready) {
     socket.emit("status", {
       ready: true,
       peerId: planetflare.peerId,
       location: planetflare.location,
+      paymentStrategies: Object.keys(PAYMENT_STRATEGIES),
+      cacheStrategies: Object.keys(CACHE_STRATEGIES),
     });
+
+    socket.on(
+      "command",
+      async ({ command, args }) =>
+        await planetflare.handleCommand(command, args)
+    );
+  }
+  socket.on("start", planetflare.start);
+  socket.on("shutdown", planetflare.stop);
 });
 
 nextApp.prepare().then(() => {

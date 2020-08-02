@@ -11,6 +11,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@material-ui/core": "^4.11.0",
+    "@material-ui/icons": "^4.9.1",
     "express": "^4.17.1",
     "ipfs": "^0.48.0",
     "it-pipe": "^1.1.0",

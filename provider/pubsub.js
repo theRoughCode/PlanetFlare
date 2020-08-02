@@ -78,7 +78,7 @@ class PubSub {
           message.data
         );
 
-        let cid;
+        let cId;
 
         switch (type) {
           case Message.Type.UPDATE_FILE:

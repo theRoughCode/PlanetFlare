@@ -1,6 +1,7 @@
 const all = require("it-all");
 const fs = require("fs").promises;
 const { multihashToCid } = require("./utils");
+const { log, error } = require('./logger');
 
 /**
  * Provides utility functions for managing local CDN.
@@ -13,7 +14,7 @@ class CDNManager {
   hasFile = async (cid) => {
     for await (const ref of this.ipfs.refs.local()) {
       if (ref.err) {
-        console.error(ref.err);
+        error(ref.err);
         continue;
       }
 
@@ -38,9 +39,9 @@ class CDNManager {
   provideFile = async (cid, timeout = 1000) => {
     try {
       await all(this.ipfs.dht.provide(cid, { timeout }));
-      console.log(`Provided ${cid}.`);
+      log(`Provided ${cid}.`);
     } catch (err) {
-      console.error(`Failed to provide ${cid}: ${err}.`);
+      error(`Failed to provide ${cid}: ${err}.`);
     }
   };
 
@@ -52,7 +53,7 @@ class CDNManager {
       const data = await fs.readFile(path, "utf8");
       return await this.storeData(data);
     } catch (err) {
-      console.error(`ERROR: Failed to read file from ${path}.`);
+      error(`ERROR: Failed to read file from ${path}.`);
       return null;
     }
   };
@@ -70,7 +71,7 @@ class CDNManager {
     }
 
     const file = await this.ipfs.add(data);
-    console.log(`Added file: ${file.path}, ${file.cid}`);
+    log(`Added file: ${file.path}, ${file.cid}`);
 
     return file;
   };
@@ -90,7 +91,7 @@ class CDNManager {
 
     if (store) {
       const localBlock = await this.ipfs.block.put(block.data);
-      console.log(`Stored remote file: ${localBlock.cid}`);
+      log(`Stored remote file: ${localBlock.cid}`);
 
       if (provide) await this.provideFile(localBlock.cid);
 

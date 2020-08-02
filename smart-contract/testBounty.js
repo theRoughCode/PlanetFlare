@@ -23,12 +23,12 @@ var primaryAccount = web3.eth.accounts.privateKeyToAccount('0x4f3edf983ac636a65a
 var secondaryAccount = web3.eth.accounts.privateKeyToAccount('0x6cbed15c793ce57650b9877cf6fa156fbef513c4e6134f022a85b1ffdd59b2a1')
 
 function getPrimaryBalance(callback) {
-    PlanetFlareContract.methods.balanceOf(secondaryAccount.address).call(callback);
+    PlanetFlareContract.methods.balanceOf(primaryAccount.address).call(callback);
 }
 
-function transferPFC(amount, callback) {
-    PlanetFlareContract.methods.transfer(secondaryAccount.address, amount).send(
-        {from: primaryAccount.address},
+function transferPFC(from, to, amount, callback) {
+    PlanetFlareContract.methods.transfer(to, amount).send(
+        {from: from},
         callback
     );
 }
@@ -82,10 +82,14 @@ function deleteBounty() {
 //     console.log(receipt.events['BountyUpdate'].returnValues);
 // });
 
-// getBountyIDs(primaryAccount.address, function(error, bountyIDs) {
-//     bountyIDs.forEach(id => getBounty(id, (_, r) => console.log(r)));
-// });
+getBountyIDs(primaryAccount.address, function(error, bountyIDs) {
+    bountyIDs.forEach(id => getBounty(id, (_, r) => console.log(r)));
+});
 
 // paymentChannelTest();
 
-deleteBounty();
+// deleteBounty();
+
+// getPrimaryBalance(console.log);
+
+// transferPFC(primaryAccount.address, secondaryAccount.address, 100, console.log);

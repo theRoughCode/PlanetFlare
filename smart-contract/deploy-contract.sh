@@ -8,3 +8,5 @@ echo $(truffle migrate | grep 'contract address' | tail -1 | sed 's/^.*: //') > 
 echo "Deployed contract!"
 echo "Copying contract address to publisher..."
 cp ./contract-address.txt ../publisher/contract-address.txt
+echo "Copying contract address to provider..."
+cp ./contract-address.txt ../provider/contract-address.txt

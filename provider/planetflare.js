@@ -1,3 +1,4 @@
+const fs = require('fs');
 const IPFS = require("ipfs");
 const Repo = require("ipfs-repo");
 const libp2pConfig = require("./libp2p-config");
@@ -9,6 +10,7 @@ const RetrievalProtocol = require("./protocols/retrieval-protocol");
 const { CACHE_STRATEGIES } = require("./strategies/cache-strategy");
 const { PAYMENT_STRATEGIES } = require("./strategies/payment-strategy");
 const { log, error } = require("./logger");
+const PFC = require('./build/contracts/PlanetFlareCoin');
 
 // Store data in /tmp directory.
 const IPFS_LOCATION = "/tmp/ipfs-planetflare";
@@ -53,6 +55,11 @@ class PlanetFlare {
     this.ready = false;
     this.paymentStrategy = "DEFAULT";
     this.cacheStrategy = "DEFAULT";
+    this.abi = PFC.abi;
+    fs.readFile("./contract-address.txt", "utf8", (err, data) => {
+      if (err) console.error("Failed to read contract-address.txt", err);
+      else this.contractAddress = data.trim();
+    });
   }
 
   start = async () => {
@@ -79,6 +86,8 @@ class PlanetFlare {
       location: this.location,
       paymentStrategies: Object.keys(PAYMENT_STRATEGIES),
       cacheStrategies: Object.keys(CACHE_STRATEGIES),
+      pfcAbi: this.abi,
+      pfcContractAddress: this.contractAddress,
     });
   };
 

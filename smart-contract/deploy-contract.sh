@@ -3,6 +3,8 @@ echo "Compiling contract..."
 truffle compile
 echo "Copying build to publisher..."
 cp -r ./build ../publisher
+echo "Copying build to provider..."
+cp -r ./build ../provider
 echo "Deploying contract onto local node..."
 echo $(truffle migrate | grep 'contract address' | tail -1 | sed 's/^.*: //') > contract-address.txt
 echo "Deployed contract!"

@@ -60,6 +60,8 @@ export default function Main(props) {
   const [cacheStrategies, setCacheStrategies] = React.useState(["DEFAULT"]);
   const [logs, setLogs] = React.useState([]);
   const [web3, setWeb3] = React.useState(null);
+  const [pfcAbi, setPfcAbi] = React.useState(null);
+  const [pfcContractAddress, setPfcContractAddress] = React.useState(null);
   const socketRef = useRef();
   const logsContainerRef = useRef(null);
   const fixedHeightPaper = clsx(classes.paper, classes.fixedHeight);
@@ -73,6 +75,8 @@ export default function Main(props) {
       setIpfsLocation(status.location || "");
       setPaymentStrategies(status.paymentStrategies || []);
       setCacheStrategies(status.cacheStrategies || []);
+      setPfcAbi(status.pfcAbi);
+      setPfcContractAddress(status.pfcContractAddress);
     });
 
     socketRef.current.on("logs", (data) => updateLogs(data));
@@ -187,7 +191,11 @@ export default function Main(props) {
             {/* Current Balance */}
             <Grid item xs={12} md={4} lg={3}>
               <Paper className={fixedHeightPaper}>
-                <Balance web3={web3} />
+                <Balance
+                  web3={web3}
+                  pfcAbi={pfcAbi}
+                  pfcContractAddress={pfcContractAddress}
+                />
               </Paper>
             </Grid>
             {/* Logs */}

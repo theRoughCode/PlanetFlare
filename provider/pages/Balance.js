@@ -24,7 +24,7 @@ const getDate = () =>
     second: "2-digit",
   });
 
-export default function Balance({ web3 }) {
+export default function Balance({ web3, pfcAbi, pfcContractAddress }) {
   const classes = useStyles();
   const pollInterval = 1000;
   const [anchorEl, setAnchorEl] = useState(null);
@@ -34,22 +34,23 @@ export default function Balance({ web3 }) {
 
   // Poll for updated account balance
   useEffect(() => {
-    if (web3 == null) return;
+    if (web3 == null || pfcAbi == null || pfcContractAddress == null) return;
     const interval = setInterval(async () => {
       try {
+        const pfcContract = new web3.eth.Contract(pfcAbi, pfcContractAddress);
         const accounts = await web3.eth.getAccounts();
         if (accounts.length === 0) return;
         const newAccount = accounts[0];
         setAccount(newAccount);
-        const newBalance = await web3.eth.getBalance(newAccount);
+        const newBalance = await pfcContract.methods.balanceOf(newAccount).call();
         setBalance(newBalance);
       } catch (error) {
-        console.error("Failed to retrieve account balance.", error);        
+        console.error("Failed to retrieve account balance.", error);
       }
     }, pollInterval);
 
     return () => clearInterval(interval);
-  }, [web3]);
+  }, [web3, pfcAbi, pfcContractAddress]);
 
   useEffect(() => setDate(getDate()), [account, balance]);
 

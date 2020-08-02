@@ -1,8 +1,5 @@
 node_modules
 .next
-smart-contract/build
-smart-contract/contract-address.txt
-publisher/build
-publisher/contract-address.txt
+**/build
+**/contract-address.txt
 publisher/web3-private-key.txt
-provider/contract-address.txt

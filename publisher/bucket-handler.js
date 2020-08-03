@@ -1,4 +1,5 @@
 const fs = require("fs").promises;
+const path = require("path");
 const credentials = require('./common/credentials');
 const { Buckets } = require("@textile/hub");
 const { Libp2pCryptoIdentity } = require("@textile/threads-core");
@@ -72,30 +73,54 @@ class BucketHandler {
   /**
    * Upsert files to bucket. 
    */
-  async upsertFiles(bucketName, filePaths) {
+  async upsertFiles(bucketName, localFilePaths) {
     const { bucketClient, bucketKey } = await this.getOrInit(bucketName);
 
-    const promises = filePaths.map(async filePath => {
-      const buffer = await fs.readFile(filePath);
-      return bucketClient.pushPath(bucketKey, filePath, buffer);
-    });
-    await this.updateIndex(bucketName, filePaths);
-    return await Promise.all(promises);
+    // can't use Promise.all cause of some weird concurrency issue?
+    for (let i = 0; i < localFilePaths.length; ++i) {
+      try {
+        const localFilePath = localFilePaths[i];
+        const buffer = await fs.readFile(localFilePath);
+        const filePath = path.basename(localFilePath);
+
+        const file = { 
+          path: filePath,
+          content: buffer
+        };
+        console.log(`Pushing file ${localFilePath} to ${bucketKey}`);
+        await bucketClient.pushPath(bucketKey, filePath, file);
+      } catch (err) {
+        console.log(`Exception on ${localFilePaths[i]}`);
+        console.log(error);
+      }
+    }
+
+    await this.updateIndex(bucketName, localFilePaths);
   }
 
   /**
    * Remove files from bucket.
    */
-  async removeFiles(bucketName, filePaths) {
+  async removeFiles(bucketName, localFilePaths) {
     const { bucketClient, bucketKey } = await this.getOrInit(bucketName);
 
-    for (let i = 0; i < filePaths.length; ++i) {
+    for (let i = 0; i < localFilePaths.length; ++i) {
       try {
-        await bucketClient.removePath(bucketKey, filePaths[i]);
+        const filePath = path.basename(localFilePaths[i]);
+        await bucketClient.removePath(bucketKey, filePath);
       } catch {}
     }
 
-    await this.updateIndex(bucketName, filePaths, true);
+    await this.updateIndex(bucketName, localFilePaths, true);
+  }
+
+  /**
+   * Remove a Textile bucket. 
+   */
+  async removeBucket(bucketName) {
+    const { bucketClient, bucketKey } = await this.getOrInit(bucketName);
+    await bucketClient.remove(bucketKey);
+    console.log(`Removed bucket ${bucketName}`);
   }
 
   /**
@@ -114,7 +139,7 @@ class BucketHandler {
       }
     } else {
       this.indices[bucketKey] = {
-        author: this.identity.public.toString(),
+        publisher: this.identity.public.toString(),
         date: (new Date()).getTime(),
         paths: new Set()
       }

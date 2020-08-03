@@ -55,10 +55,7 @@ const main = async () => {
    */
   const pfcResources = Array.from(document.querySelectorAll("[data-pfc]"));
 
-  pfcResources
-    .map((resourceNode) => resourceNode.getAttribute("data-pfc"))
-  if (pfcResources.length > 0) {
-    remainingTokens = await requestTokens(pfcResources.length);
+  pfcResources.map((resourceNode) => resourceNode.getAttribute("data-pfc"));
 
   const numMissingTokens = pfcResources.length - remainingTokens.length;
 

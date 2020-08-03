@@ -3,7 +3,7 @@
 ### Start running your PlanetFlare Provider IPFS node
 1. Run `npm install`.
 2. Run `npm start`.
-3. Go to http://localhost.com:3000 to view your provider dashboard and start your IPFS node!
+3. Go to http://localhost.com:5000 to view your provider dashboard and start your IPFS node!
 
 ### Testing locally
 To run this locally, make sure you follow the instructions in [../smart-contract/README.md](../smart-contract/README.md).

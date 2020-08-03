@@ -42,7 +42,7 @@ export default function Balance({ web3, pfcAbi, pfcContractAddress }) {
         if (accounts.length === 0) return;
         const newAccount = accounts[0];
         setAccount(newAccount);
-        const newBalance = await pfcContract.methods.balanceOf(newAccount).call();
+        const newBalance = await pfcContract.methods.balanceOf(newAccount).call() || 0;
         setBalance(newBalance);
       } catch (error) {
         console.error("Failed to retrieve account balance.", error);

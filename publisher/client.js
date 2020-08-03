@@ -1,7 +1,9 @@
 "use strict";
 
 const PUBLISHER_NAME = `${location.hostname}` || "localhost:3000"; // Replace with publisher's API gateway.
-let remainingTokens = [];
+const LOCAL_STORAGE_PFC_TOKENS = "pfc-tokens";
+let remainingTokens =
+  JSON.parse(localStorage.getItem(LOCAL_STORAGE_PFC_TOKENS)) || [];
 let ipfs = null;
 
 /**
@@ -10,8 +12,8 @@ let ipfs = null;
 const requestTokens = async (num) => {
   const url = PUBLISHER_NAME;
   const response = await fetch(`http://${url}/get_tokens?num=${num}`);
-  const results = await response.json();
-  return JSON.parse(results)["tokens"];
+  const { tokens } = await response.json();
+  return tokens;
 };
 
 const catFile = async (cid) => {
@@ -41,22 +43,42 @@ const getResources = async (pfcResources) => {
   await Promise.all(promises);
 };
 
+const joinPubsubChannel = (cid) => {
+  if (ipfs == null) return;
+  if (pubsubChannels.hasOwnProperty(cid)) return;
+  pubsubChannels[cid] = new RetrievePubsub(ipfs.libp2p, cid);
+};
+
 const main = async () => {
   /**
    * Scan the skeleton document for files available on PFC.
    */
   const pfcResources = Array.from(document.querySelectorAll("[data-pfc]"));
 
+  pfcResources
+    .map((resourceNode) => resourceNode.getAttribute("data-pfc"))
   if (pfcResources.length > 0) {
     remainingTokens = await requestTokens(pfcResources.length);
-    getResources(pfcResources);
+
+  const numMissingTokens = pfcResources.length - remainingTokens.length;
+
+  if (numMissingTokens > 0) {
+    const newTokens = await requestTokens(numMissingTokens);
+    remainingTokens.push(...newTokens);
+    localStorage.setItem(
+      LOCAL_STORAGE_PFC_TOKENS,
+      JSON.stringify(remainingTokens)
+    );
   }
+
+  getResources(pfcResources);
 };
 
 document.addEventListener("DOMContentLoaded", async () => {
   ipfs = await Ipfs.create({ repo: "ipfs-" + Math.random() });
   const status = ipfs.isOnline() ? "online" : "offline";
   console.log(`Node status: ${status}`);
+  console.log(`Peer ID: ${ipfs.libp2p.peerId.toB58String()}`);
 
   main();
 });

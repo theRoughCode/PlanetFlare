@@ -1,8 +1,9 @@
-const fs = require('fs');
+const fs = require("fs");
 const IPFS = require("ipfs");
 const Repo = require("ipfs-repo");
 const libp2pConfig = require("./libp2p-config");
 const PubSub = require("./pubsub");
+const UpdatePubsub = require("./pubsub/update-protocol");
 const CDNManager = require("./cdn-manager");
 const CacheProtocol = require("./protocols/cache-protocol");
 const PaymentProtocol = require("./protocols/payment-protocol");
@@ -10,7 +11,7 @@ const RetrievalProtocol = require("./protocols/retrieval-protocol");
 const { CACHE_STRATEGIES } = require("./strategies/cache-strategy");
 const { PAYMENT_STRATEGIES } = require("./strategies/payment-strategy");
 const { log, error } = require("./logger");
-const PFC = require('./build/contracts/PlanetFlareCoin');
+const PFC = require("./build/contracts/PlanetFlareCoin");
 
 // Store data in /tmp directory.
 const IPFS_LOCATION = "/tmp/ipfs-planetflare";
@@ -67,17 +68,21 @@ class PlanetFlare {
     // Start up our IPFS node with our custom libp2p wrapper
     this.node = await createIPFSNode(this.metricsEnabled);
     this.peerId = this.node.libp2p.peerId.toB58String();
-    console.log(
+    log(
       `Started IPFS node:
             - Peer ID: ${this.peerId}
-            - Location: ${this.location}`
+            - Location: ${this.location}
+            - Multiaddrs: ${this.node.libp2p.multiaddrs
+              .map((addr) => addr.toString())
+              .join(", ")}`
     );
 
     // Initialize CDN Manager
     this.cdnManager = new CDNManager(this.node);
 
     this.initProtocols();
-    this.initPubsub();
+    await this.initPubsub();
+
 
     this.ready = true;
     this.io.emit("status", {
@@ -120,11 +125,13 @@ class PlanetFlare {
     );
   };
 
-  initPubsub = () => {
+  initPubsub = async () => {
     // Create a PubSub client for each cdn file we're serving
     this.cdnFiles.forEach(
-      ({ bucketId, hostId }) => new PubSub(this.node.libp2p, bucketId, hostId)
+      ({ bucketId, hostId }) =>
+        new UpdatePubsub(this.node.libp2p, bucketId, hostId)
     );
+    const pinnedFiles = await this.cdnManager.getPinnedFiles();
   };
 
   handleCommand = async (command, args) => {

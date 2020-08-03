@@ -1,2 +1,2 @@
 #!/bin/bash
-ganache-cli -d --allowUnlimitedContractSize -l 10000000000000
+ganache-cli -d --allowUnlimitedContractSize -l 10000000000000 --quiet

@@ -38,8 +38,8 @@ const libp2pConfig = (metricsEnabled = false) => (opts) => {
     peerId,
     addresses: {
       listen: [
-        '/ip4/0.0.0.0/tcp/0',
-        '/ip4/0.0.0.0/tcp/0/ws',
+        '/ip4/0.0.0.0/tcp/5002',
+        '/ip4/0.0.0.0/tcp/5002/ws',
       ]
     },
     modules: {

@@ -1,10 +1,10 @@
-const fs = require('fs').promises;
-const credentials = require('credentials');
-const { createUserAuth, Client, Bucket } = require("@textile/hub");
+const fs = require("fs").promises;
+const credentials = require('./common/credentials');
+const { Buckets } = require("@textile/hub");
 const { Libp2pCryptoIdentity } = require("@textile/threads-core");
 
 /**
- * Provides utility functions for managing publisher Textile buckets.
+ * Provides utility functions for interacting with publisher Textile buckets.
  */
 class BucketHandler {
   constructor() {
@@ -14,103 +14,135 @@ class BucketHandler {
     this.indices = {}; 
   }
 
-  setup = async () => {
+  async setup() {
     this.identity = await this.getTextileIdentity();
   }
 
   /**
    * Gets the user's identity, generated through libp2p. 
-   * Tries to restore from cache before creating a new one. 
    */
-  getTextileIdentity = async () => {
-    const cached = localStorage.getItem("user-private-identity");
-    if (cached !== null) {
-      return Libp2pCryptoIdentity.fromString(cached);
+  async getTextileIdentity(identityPath = 'textile-identity.txt') {
+    try { 
+      return Libp2pCryptoIdentity.fromString(await fs.readFile(identityPath));
+    } catch {
+      const result = await Libp2pCryptoIdentity.fromRandom();
+      await fs.writeFile(identityPath, result.toString());
+      return result;
     }
-    const identity = await Libp2pCryptoIdentity.fromRandom();
-    localStorage.setItem("identity", identity.toString());
-    return identity;
   }
 
   /**
-   * Initialize API and init / open a bucket.
+   * Initialize gRPC client instance for buckets. 
    */
-  getOrInit = async (bucketName) => {
-    const buckets = Bucket.withKeyInfo(this.keyInfo);
-    await buckets.getToken(this.identity);
+  async openClient() {
+    const bucketClient = await Buckets.withKeyInfo(this.keyInfo);
+    await bucketClient.getToken(this.identity);
+    return bucketClient;
+  }
 
-    const { root, _ } = await buckets.getOrInit(bucketName);
-    if (!root) {
-      throw new Error(`Failed to open/create bucket ${bucketName}`);
+  /**
+   * Open a bucket, or create it if it already exists.
+   */
+  async getOrInit(bucketName) {
+    const bucketClient = await this.openClient();
+
+    let root; 
+    try {
+      root = await bucketClient.open(bucketName);
+      //console.log(`Found bucket ${bucketName}.`);
+    } catch {
+      root = await bucketClient.init(bucketName);
+      //console.log(`Created bucket ${bucketName}`);
     }
 
     return {
-      buckets, bucketKey: root.key
+      bucketClient, bucketKey: root.key
     }
   }
 
+  /**
+   * Get all files and directories in a given bucket. 
+   */
+  async getListPath(bucketName) {
+    const { bucketClient, bucketKey } = await this.getOrInit(bucketName);
+    const paths = await bucketClient.listPath(bucketKey);
+    return paths.item.itemsList;
+  }
+
+  /**
+   * Upsert files to bucket. 
+   */
+  async upsertFiles(bucketName, filePaths) {
+    const { bucketClient, bucketKey } = await this.getOrInit(bucketName);
+
+    const promises = filePaths.map(async filePath => {
+      const buffer = await fs.readFile(filePath);
+      return bucketClient.pushPath(bucketKey, filePath, buffer);
+    });
+    await this.updateIndex(bucketName, filePaths);
+    return await Promise.all(promises);
+  }
+
+  /**
+   * Remove files from bucket.
+   */
+  async removeFiles(bucketName, filePaths) {
+    const { bucketClient, bucketKey } = await this.getOrInit(bucketName);
+
+    for (let i = 0; i < filePaths.length; ++i) {
+      try {
+        await bucketClient.removePath(bucketKey, filePaths[i]);
+      } catch {}
+    }
+
+    await this.updateIndex(bucketName, filePaths, true);
+  }
 
   /**
    * Initializes/updates index with new files. Indices are used to
    * track which files exist in a publisher's bucket.
    */
-  updateIndex = async (bucketName, filePath) => {
-    const { buckets, bucketKey } = await this.getOrInit(bucketName);
+  async updateIndex(bucketName, filePaths, remove = false) {
+    const { bucketClient, bucketKey } = await this.getOrInit(bucketName);
     
-    if (bucketName in this.indices) {
-      const oldIndex = this.indices[bucketName];
-      this.indices[bucketName] = {
+    if (bucketKey in this.indices) {
+      const oldIndex = this.indices[bucketKey];
+      this.indices[bucketKey] = {
         ...oldIndex,
-        paths: [...oldIndex.paths, filePath]
+        paths: remove ? new Set([...oldIndex.paths, ...filePaths]) 
+          : new Set([...oldIndex.paths].filter(x => filePaths.has(x)))
       }
     } else {
-      this.indices[bucketName] = {
+      this.indices[bucketKey] = {
         author: this.identity.public.toString(),
         date: (new Date()).getTime(),
-        paths: []
+        paths: new Set()
       }
     }
 
-    const index = this.indices[bucketName];
+    const index = this.indices[bucketKey];
     const buf = Buffer.from(JSON.stringify(index, null, 2));
     const path = "index.json";
-    await buckets.pushPath(bucketKey, path, buf);
+    await bucketClient.pushPath(bucketKey, path, buf);
 
     return index;
   }
 
   /**
-   * Add file to bucket. 
+   * Gets IPNS link for a bucket. 
    */
-  addFile = async (bucketName, filePath) => {
-    const { buckets, bucketKey } = await this.getOrInit(bucketName);
-    const buffer = await fs.readFile(filePath);
-    await this.updateIndex(bucketName, filePath);
-    return buckets.pushPath(bucketKey, filePath, buffer);
+  async getIPNSLink(bucketName) {
+    const { bucketClient, bucketKey } = await this.getOrInit(bucketName);
+    const links = await bucketClient.links(bucketKey);
+    return links.ipns;
   }
 
-  /**
-   * Report bucket bounty.
-   */
-  setBounty = async (bucketName) => {
-    const { buckets, bucketKey } = await this.getOrInit(bucketName);
-    const cid = await buckets.root(bucketKey.key);
-    // payments  
-  }
-
-  /**
-   * Push bucket update notification to subscribers.
-   */
-  updateSubscribers = async (bucketName) => {
-    // ping pubsub
-  }
-  
   /**
    * Sign a given sequence of bytes.
    * @param {*} signeeBuf input buffer
    * @param {*} identity user identity object
    */
-  sign = async (signeeBuf, identity) => {
+  async sign(signeeBuf, identity) {
     const challenge = Buffer.from(signeeBuf);
     const signed = identity.sign(challenge);
     return signed;

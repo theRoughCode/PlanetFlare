@@ -12,15 +12,10 @@ class CDNManager {
   }
 
   hasFile = async (cid) => {
-    for await (const ref of this.ipfs.refs.local()) {
-      if (ref.err) {
-        error(ref.err);
-        continue;
-      }
+    const pinnedFiles = await this.getPinnedFiles();
 
-      // Convert multihash to CID
-      const refCID = multihashToCid(ref.ref);
-      if (refCID === cid.toString()) return true;
+    for (const pinned of pinnedFiles) {
+      if (pinned.cid.toString() === cid) return true;
     }
     return false;
   };
@@ -31,6 +26,14 @@ class CDNManager {
 
   getFile = (cid) => {
     // return data
+  };
+
+  getPinnedFiles = async () => {
+    const pinnedFiles = [];
+    for await (const pinned of this.ipfs.pin.ls()) {
+      pinnedFiles.push(pinned);
+    }
+    return pinnedFiles;
   };
 
   /**

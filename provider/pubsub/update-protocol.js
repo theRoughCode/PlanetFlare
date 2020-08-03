@@ -29,9 +29,9 @@ message AddFile {
 `);
 
 /**
- * PubSub channel for Providers to listen in on updated files by Publishers
+ * Pubsub channel for Providers to listen in on updated files by Publishers
  */
-class PubSub {
+class UpdatePubsub {
   /**
    *
    * @param {Libp2p} libp2p A Libp2p node to communicate through
@@ -40,7 +40,7 @@ class PubSub {
    */
   constructor(libp2p, bucketId, publisherId) {
     this.libp2p = libp2p;
-    this.topic = `/planetflare/pubsub/1.0.0/${bucketId}`;
+    this.topic = `/planetflare/update/1.0.0/${bucketId}`;
     this.publisherId = publisherId.toB58String();
 
     // Join if libp2p is already on
@@ -62,7 +62,7 @@ class PubSub {
   }
 
   /**
-   * Subscribes to `PubSub.topic`. All messages will be
+   * Subscribes to `UpdatePubsub.topic`. All messages will be
    * forwarded to `messageHandler`
    * @private
    */
@@ -111,4 +111,4 @@ class PubSub {
   }
 }
 
-module.exports = PubSub;
+module.exports = UpdatePubsub;

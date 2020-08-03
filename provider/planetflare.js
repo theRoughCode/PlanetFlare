@@ -2,7 +2,6 @@ const fs = require("fs");
 const IPFS = require("ipfs");
 const Repo = require("ipfs-repo");
 const libp2pConfig = require("./libp2p-config");
-const PubSub = require("./pubsub");
 const UpdatePubsub = require("./pubsub/update-protocol");
 const CDNManager = require("./cdn-manager");
 const CacheProtocol = require("./protocols/cache-protocol");

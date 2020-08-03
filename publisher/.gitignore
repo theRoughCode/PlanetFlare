@@ -1,5 +1,5 @@
 /node_modules
 /.textile
 mongo-credentials.txt
-bucket.txt
+textile-identity.txt
 hub-credentials.txt

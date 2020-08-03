@@ -24,6 +24,7 @@ accounts again so you don't need to keep importing.
 ```
 truffle compile
 truffle migrate
+./deploy-contract.sh
 ```
 
 5. Get the contract address from the console log after you run `truffle migrate` and use it

@@ -2,6 +2,7 @@ const fs = require("fs");
 const IPFS = require("ipfs");
 const Repo = require("ipfs-repo");
 const libp2pConfig = require("./libp2p-config");
+const RetrievePubsub = require("./pubsub/retrieve-protocol");
 const UpdatePubsub = require("./pubsub/update-protocol");
 const CDNManager = require("./cdn-manager");
 const CacheProtocol = require("./protocols/cache-protocol");
@@ -82,6 +83,12 @@ class PlanetFlare {
     this.initProtocols();
     await this.initPubsub();
 
+    // Listen on libp2p for `peer:connect` and log the provided connection.remotePeer.toB58String() peer id string.
+    this.node.libp2p.connectionManager.on("peer:connect", (connection) => {
+      const peerId = connection.remotePeer.toB58String();
+      if (peerId !== "QmdE4AULuKSJiD2uy7C12r9bnoDKQJHJMavPwBdWXDaJu8") return;
+      console.info(`Connected to ${peerId}!`);
+    });
 
     this.ready = true;
     this.io.emit("status", {
@@ -131,6 +138,7 @@ class PlanetFlare {
         new UpdatePubsub(this.node.libp2p, bucketId, hostId)
     );
     const pinnedFiles = await this.cdnManager.getPinnedFiles();
+    pinnedFiles.map(({ cid }) => new RetrievePubsub(this.node.libp2p, cid));
   };
 
   handleCommand = async (command, args) => {

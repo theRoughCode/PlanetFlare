@@ -6,6 +6,9 @@ let remainingTokens =
   JSON.parse(localStorage.getItem(LOCAL_STORAGE_PFC_TOKENS)) || [];
 let ipfs = null;
 
+// Mapping from CID to pubsub channel
+const pubsubChannels = {};
+
 /**
  * Ask for new tokens from the publisher.
  */
@@ -33,8 +36,10 @@ const getResources = async (pfcResources) => {
     /** Pass in `remainingTokens.pop()` */
 
     const cid = resourceNode.getAttribute("data-pfc");
-    console.log(`Retrieving ${cid}...`);
-
+    // console.log(`Retrieving ${cid}...`);
+    const poll = setInterval(() => pubsubChannels[cid].request(cid), 3000);
+    setTimeout(() => clearInterval(poll), 10000);
+    pubsubChannels[cid].request(cid)
     const data = await catFile(cid);
     console.log(`Data: ${data}`);
     resourceNode.innerHTML = data;
@@ -55,7 +60,9 @@ const main = async () => {
    */
   const pfcResources = Array.from(document.querySelectorAll("[data-pfc]"));
 
-  pfcResources.map((resourceNode) => resourceNode.getAttribute("data-pfc"));
+  pfcResources
+    .map((resourceNode) => resourceNode.getAttribute("data-pfc"))
+    .forEach(joinPubsubChannel);
 
   const numMissingTokens = pfcResources.length - remainingTokens.length;
 
@@ -72,7 +79,14 @@ const main = async () => {
 };
 
 document.addEventListener("DOMContentLoaded", async () => {
-  ipfs = await Ipfs.create({ repo: "ipfs-" + Math.random() });
+  ipfs = await Ipfs.create({
+    config: {
+      Bootstrap: [
+        "/ip4/127.0.0.1/tcp/5002/ws/p2p/QmNqu6TNZCmXVQgPcebjTBddf6yagPz2e29A7oMxmhd6dS",
+      ],
+    },
+  });
+  console.log(ipfs.id());
   const status = ipfs.isOnline() ? "online" : "offline";
   console.log(`Node status: ${status}`);
   console.log(`Peer ID: ${ipfs.libp2p.peerId.toB58String()}`);

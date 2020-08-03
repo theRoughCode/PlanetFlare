@@ -7,5 +7,4 @@ function convertUUIDToDecimal(guid) {
    return bigInteger.toString();
 }
 
-
 module.exports = { convertUUIDToDecimal };

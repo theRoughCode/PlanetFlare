@@ -1,7 +1,7 @@
 const Web3 = require('web3');
 const abi = require('ethereumjs-abi');
 const fs = require('fs');
-const credentials = require('./credentials');
+const credentials = require('./common/credentials');
 
 const getWeb3Instance = (path) => {
     return new Web3(path || 'ws://localhost:8545');

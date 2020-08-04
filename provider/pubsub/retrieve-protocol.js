@@ -26,7 +26,7 @@ class RetrievePubsub {
     this.libp2p = libp2p;
     this.cid = cid;
     this.topic = `/planetflare/retrieve/1.0.0/${cid}`;
-    this.addr = libp2p.multiaddrs.filter(addr => addr.endsWith("/ws"))[0];
+    this.addr = libp2p.multiaddrs.map(addr => addr.toString()).filter(addr => addr.endsWith("/ws"))[0];
     console.log(this.addr)
 
     // Join if libp2p is already on

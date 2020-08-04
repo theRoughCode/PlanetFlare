@@ -16,7 +16,7 @@
     "cors": "^2.8.5",
     "ethereumjs-abi": "^0.6.8",
     "express": "^4.17.1",
-    "ipfs": "^0.48.1",
+    "ipfs": "git+ssh://git@github.com/theRoughCode/js-ipfs.git#ledger-for-peer",
     "isomorphic-ws": "^4.0.1",
     "it-all": "^1.0.2",
     "mongodb": "^3.5.9",

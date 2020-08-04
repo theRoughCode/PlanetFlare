@@ -6,6 +6,8 @@ let remainingTokens =
   JSON.parse(localStorage.getItem(LOCAL_STORAGE_PFC_TOKENS)) || [];
 let ipfs = null;
 
+const providerManager = new ProviderManager();
+
 /**
  * Ask for new tokens from the publisher.
  */
@@ -16,6 +18,9 @@ const requestTokens = async (num) => {
   return tokens;
 };
 
+/**
+ * Get data from IPFS
+ */
 const catFile = async (cid) => {
   if (ipfs == null) return;
   const chunks = [];
@@ -23,6 +28,25 @@ const catFile = async (cid) => {
     chunks.push(chunk.toString());
   }
   return chunks.join("");
+};
+
+/**
+ * Keep track of providers that served files
+ */
+const onReceiveBlock = (bitswap) => (peerId, block, exists) => {
+  bitswap._updateReceiveCountersInternal(peerId, block, exists);
+  if (exists) return;
+  providerManager.add(peerId, block.cid.toString());
+};
+
+const rewardProviders = (cid) => {
+  const providers = providerManager.get(cid);
+  if (providers == null || providers.length === 0) return;
+
+  console.log(`Rewarding ${Object.keys(providers).join(', ')} for cid ${cid}`);
+
+  // Once rewarded, remove to prevent buildup of stale data
+  providerManager.remove(cid);
 };
 
 /**
@@ -38,6 +62,7 @@ const getResources = async (pfcResources) => {
     const data = await catFile(cid);
     console.log(`Data: ${data}`);
     resourceNode.innerHTML = data;
+    rewardProviders(cid);
   });
 
   await Promise.all(promises);
@@ -72,7 +97,12 @@ const main = async () => {
 };
 
 document.addEventListener("DOMContentLoaded", async () => {
-  ipfs = await Ipfs.create({ repo: "ipfs-" + Math.random() });
+  ipfs = await IPFS.create({ repo: "ipfs-" + Math.random() });
+
+  // Hacky way to create a wrapper around internal bitswap function to retrieve provider IDs
+  ipfs.bitswap.Bitswap._updateReceiveCountersInternal = ipfs.bitswap.Bitswap._updateReceiveCounters;
+  ipfs.bitswap.Bitswap._updateReceiveCounters = onReceiveBlock(ipfs.bitswap.Bitswap);
+
   const status = ipfs.isOnline() ? "online" : "offline";
   console.log(`Node status: ${status}`);
   console.log(`Peer ID: ${ipfs.libp2p.peerId.toB58String()}`);

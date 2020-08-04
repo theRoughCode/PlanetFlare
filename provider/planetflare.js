@@ -82,7 +82,6 @@ class PlanetFlare {
     this.initProtocols();
     await this.initPubsub();
 
-
     this.ready = true;
     this.io.emit("status", {
       ready: true,

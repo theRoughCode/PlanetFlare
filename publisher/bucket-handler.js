@@ -12,7 +12,7 @@ class BucketHandler {
     const [keyInfo, secret] = credentials.getCredentialsTextile();
     this.keyInfo = keyInfo;
     this.secret = secret;
-    this.indices = {}; 
+    this.indices = {};  // bucketKey -> (fileName -> cid)
   }
 
   async setup() {
@@ -50,10 +50,8 @@ class BucketHandler {
     let root; 
     try {
       root = await bucketClient.open(bucketName);
-      //console.log(`Found bucket ${bucketName}.`);
     } catch {
       root = await bucketClient.init(bucketName);
-      //console.log(`Created bucket ${bucketName}`);
     }
 
     return {
@@ -75,8 +73,8 @@ class BucketHandler {
    */
   async upsertFiles(bucketName, localFilePaths) {
     const { bucketClient, bucketKey } = await this.getOrInit(bucketName);
+    const cidMap = {};
 
-    // can't use Promise.all cause of some weird concurrency issue?
     for (let i = 0; i < localFilePaths.length; ++i) {
       try {
         const localFilePath = localFilePaths[i];
@@ -88,14 +86,16 @@ class BucketHandler {
           content: buffer
         };
         console.log(`Pushing file ${localFilePath} to ${bucketKey}`);
-        await bucketClient.pushPath(bucketKey, filePath, file);
+        const res = await bucketClient.pushPath(bucketKey, filePath, file);
+        cidMap[filePath] = res.path.cid.toString();
+
       } catch (err) {
         console.log(`Exception on ${localFilePaths[i]}`);
         console.log(error);
       }
     }
 
-    await this.updateIndex(bucketName, localFilePaths);
+    await this.updateIndex(bucketName, cidMap);
   }
 
   /**
@@ -127,29 +127,32 @@ class BucketHandler {
    * Initializes/updates index with new files. Indices are used to
    * track which files exist in a publisher's bucket.
    */
-  async updateIndex(bucketName, filePaths, remove = false) {
+  async updateIndex(bucketName, newCidMap, remove = false) {
     const { bucketClient, bucketKey } = await this.getOrInit(bucketName);
-    
-    if (bucketKey in this.indices) {
-      const oldIndex = this.indices[bucketKey];
-      this.indices[bucketKey] = {
-        ...oldIndex,
-        paths: remove ? new Set([...oldIndex.paths, ...filePaths]) 
-          : new Set([...oldIndex.paths].filter(x => filePaths.has(x)))
-      }
-    } else {
+
+    if (!(bucketKey in this.indices)) {
       this.indices[bucketKey] = {
         publisher: this.identity.public.toString(),
         date: (new Date()).getTime(),
-        paths: new Set()
+        contents: {}
       }
     }
 
     const index = this.indices[bucketKey];
+
+    for (const [fileName, cid] of Object.entries(newCidMap)) {
+      if (remove) {
+        try {
+          delete index.contents[fileName];
+        } catch {}
+      } else {
+        index.contents[fileName] = cid;
+      }
+    }
+
     const buf = Buffer.from(JSON.stringify(index, null, 2));
     const path = "index.json";
     await bucketClient.pushPath(bucketKey, path, buf);
-
     return index;
   }
 

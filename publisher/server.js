@@ -105,6 +105,9 @@ const init = async () => {
   publisherStore = new PublisherStore();
   await node.start();
   await publisherStore.setup();
+
+  await console.log(await node.bucketHandler.upsertFiles('bucket1', ['README.md', 'package.json']));
+  await console.log(await node.bucketHandler.getIPNSLink('bucket1'));
 }
 
 init();

@@ -24,7 +24,9 @@ class BucketHandler {
    */
   async getTextileIdentity(identityPath = 'textile-identity.txt') {
     try { 
-      return Libp2pCryptoIdentity.fromString(await fs.readFile(identityPath));
+      return Libp2pCryptoIdentity.fromString((
+        await fs.readFile(identityPath)
+      ).trim());
     } catch {
       const result = await Libp2pCryptoIdentity.fromRandom();
       await fs.writeFile(identityPath, result.toString());
@@ -91,7 +93,7 @@ class BucketHandler {
 
       } catch (err) {
         console.log(`Exception on ${localFilePaths[i]}`);
-        console.log(error);
+        console.log(err);
       }
     }
 

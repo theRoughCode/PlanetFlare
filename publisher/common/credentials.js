@@ -5,7 +5,7 @@ const fs = require("fs");
  * from secret file. 
  */
 const getCredentialsMongo = () => {
-    const credentials = fs.readFileSync("mongo-credentials.txt").toString().split("\n");
+    const credentials = fs.readFileSync("mongo-credentials.txt").toString().trim().split("\n");
     return credentials;
 }
 
@@ -19,7 +19,7 @@ const getWeb3PrivateKey = () => {
  * from secret file. 
  */
 const getCredentialsTextile = () => {
-    const [key, secret] = fs.readFileSync("hub-credentials.txt").toString().split("\n");
+    const [key, secret] = fs.readFileSync("hub-credentials.txt").toString().trim().split("\n");
     return [ {key}, secret ];
 }
 

@@ -13,9 +13,14 @@ class BountyItem extends React.Component {
     }
 
     render() {
-        return (
-            <p className="bountyItem">{this.state.id}, {this.state.publisher}, {this.state.bucketID}, {this.state.costPerToken}, {this.state.lastUpdated}</p>
-        )
+        return ( 
+        <tr>
+            <td>{this.state.id}</td>
+            <td>{this.state.publisher}</td>
+            <td>{this.state.bucketID}</td>
+            <td>{this.state.costPerToken}</td>
+        </tr>
+        );
     }
 }
 

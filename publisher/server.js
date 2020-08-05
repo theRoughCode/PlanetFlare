@@ -4,6 +4,7 @@
 const express = require("express");
 const uuid = require("uuid");
 const cors = require("cors");
+const upload = require("./common/upload");
 const PlanetFlarePublisher = require('./planetflare-publisher');
 const PublisherStore = require('./publisher-store');
 const BucketHandler = require("./bucket-handler");
@@ -100,14 +101,20 @@ app.listen(PORT, () => {
   console.log(`Publisher listening on port ${PORT}`);
 });
 
+app.post('/upload', async (req, res) => {
+  const files = req.body.files;
+  const { _, bucketKey } = await node.bucketHandler.getOrInit('bucket1');
+  await node.bucketHandler.upsertFiles('bucket1', files);
+
+  res.json({ bucketId: bucketKey });
+});
+
 const init = async () => {
   node = new PlanetFlarePublisher();
   publisherStore = new PublisherStore();
   await node.start();
   await publisherStore.setup();
-
-  await console.log(await node.bucketHandler.upsertFiles('bucket1', ['README.md', 'package.json']));
-  await console.log(await node.bucketHandler.getIPNSLink('bucket1'));
+  await console.log('done init!')
 }
 
 init();

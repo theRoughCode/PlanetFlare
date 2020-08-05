@@ -16,6 +16,7 @@
     "cors": "^2.8.5",
     "ethereumjs-abi": "^0.6.8",
     "express": "^4.17.1",
+    "formidable": "^1.2.2",
     "ipfs": "^0.48.1",
     "isomorphic-ws": "^4.0.1",
     "it-all": "^1.0.2",

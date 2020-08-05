@@ -2,6 +2,7 @@ import React, { Component } from "react";
 import Dropzone from "../dropzone/Dropzone";
 import "./Upload.css";
 import Progress from "../progress/Progress";
+import BountyItem from '../bountyItem/BountyItem';
 
 class Upload extends Component {
   constructor(props) {
@@ -10,13 +11,51 @@ class Upload extends Component {
       files: [],
       uploading: false,
       uploadProgress: {},
-      successfulUploaded: false
+      successfulUploaded: false,
+      pfcContract: props.pfcContract,
+      account: props.account,
+      web3: props.web3
     };
 
     this.onFilesAdded = this.onFilesAdded.bind(this);
     this.uploadFiles = this.uploadFiles.bind(this);
     this.sendRequest = this.sendRequest.bind(this);
     this.renderActions = this.renderActions.bind(this);
+  }
+
+  componentWillMount() {
+    this.loadBounties();
+  }
+
+  async loadBounties() {
+    const contract = this.state.pfcContract;
+
+    const bountyIDs = await contract.methods.getBountiesForPublisher(this.state.account).call();
+
+    const bounties = await Promise.all(
+      bountyIDs.map(id => contract.methods.getBounty(id).call())
+    )
+
+    let updatedState = this.state;
+    updatedState.bounties = bounties;
+    updatedState.loaded = true;
+
+    this.setState(updatedState);
+  }
+
+  async createBounty(bucketID) {
+    // TOOD: Richard, upload bucket to Textile and give me the bucketID and costPerToken
+
+    // TODO: don't hardcode this and expose a UI for the user to specify this
+    let costPerToken = 1;
+
+    console.log(this.state);
+    const PlanetFlareContract = this.state.pfcContract;
+
+    PlanetFlareContract.methods.createBounty(bucketID, costPerToken).send({
+      from: this.state.account,
+      gas: 50000000
+    }).then((_) => this.loadBounties());
   }
 
   onFilesAdded(files) {
@@ -27,13 +66,11 @@ class Upload extends Component {
 
   async uploadFiles() {
     this.setState({ uploadProgress: {}, uploading: true });
-    const promises = [];
-    this.state.files.forEach(file => {
-      promises.push(this.sendRequest(file));
-    });
     try {
-      await Promise.all(promises);
-
+      const res = await this.sendRequest(this.state.files);
+      const bucketId = (await res.json()).bucketId;
+      console.log(bucketId);
+      this.createBounty(bucketId);
       this.setState({ successfulUploaded: true, uploading: false });
     } catch (e) {
       // Not Production ready! Do some error handling here instead...
@@ -41,41 +78,16 @@ class Upload extends Component {
     }
   }
 
-  sendRequest(file) {
-    return new Promise((resolve, reject) => {
-      const req = new XMLHttpRequest();
-
-      req.upload.addEventListener("progress", event => {
-        if (event.lengthComputable) {
-          const copy = { ...this.state.uploadProgress };
-          copy[file.name] = {
-            state: "pending",
-            percentage: (event.loaded / event.total) * 100
-          };
-          this.setState({ uploadProgress: copy });
-        }
-      });
-
-      req.upload.addEventListener("load", event => {
-        const copy = { ...this.state.uploadProgress };
-        copy[file.name] = { state: "done", percentage: 100 };
-        this.setState({ uploadProgress: copy });
-        resolve(req.response);
-      });
-
-      req.upload.addEventListener("error", event => {
-        const copy = { ...this.state.uploadProgress };
-        copy[file.name] = { state: "error", percentage: 0 };
-        this.setState({ uploadProgress: copy });
-        reject(req.response);
-      });
-
-      const formData = new FormData();
-      formData.append("file", file, file.name);
-
-      req.open("POST", "http://localhost:8000/upload");
-      req.send(formData);
+  sendRequest(files) {
+    const response = fetch("http://localhost:3001/upload", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({files: files.map(file => file.name)})
     });
+
+    return response;
   }
 
   renderProgress(file) {
@@ -121,6 +133,49 @@ class Upload extends Component {
     }
   }
 
+  renderBountyList() {
+    if (!this.state.loaded) return null;
+
+    const bountyItems = this.state.bounties.map(
+      bounty =>
+      <BountyItem 
+        key={bounty[0]}
+        className="bountyItem"
+        id={bounty[0]}
+        publisher={bounty[1]}
+        bucketID={bounty[2]}
+        costPerToken={bounty[3]}
+        lastUpdated={bounty[4]}
+      >
+      </BountyItem>
+    );
+
+    let bodyItem;
+    if (bountyItems.length > 0) {
+      bodyItem = (<table>
+        <thead>
+          <tr>
+            <th>Bounty ID</th>
+            <th>Publisher Address</th>
+            <th>Bucket ID</th>
+            <th>Cost per token</th>
+          </tr>
+        </thead>
+        <tbody>
+          {bountyItems}
+        </tbody>
+      </table>);
+    }
+    else
+      bodyItem = (<p className="emptyBountyList">No Bounties :(</p>);
+
+    return (
+      <div className="bountyList">
+        {bodyItem}
+      </div>
+    );
+  }
+
   render() {
     return (
       <div className="Upload">
@@ -144,6 +199,7 @@ class Upload extends Component {
           </div>
         </div>
         <div className="Actions">{this.renderActions()}</div>
+        {this.renderBountyList()}
       </div>
     );
   }

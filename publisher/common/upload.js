@@ -1,17 +1,8 @@
 const IncomingForm = require("formidable").IncomingForm;
 
 const upload = (req, res) => {
-  const form = new IncomingForm();
-
-  form.on("file", (field, file) => {
-
-  });
-
-  form.on("end", () => {
-
-  });
-
-  form.parse(req);
+  console.log("Got request");
+  console.log(req.body);
 }
 
 module.exports = upload;

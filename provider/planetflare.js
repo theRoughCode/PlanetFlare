@@ -1,4 +1,5 @@
 const fs = require("fs");
+const axios = require("axios");
 const IPFS = require("ipfs");
 const Repo = require("ipfs-repo");
 const libp2pConfig = require("./libp2p-config");
@@ -14,6 +15,9 @@ const PFC = require("./build/contracts/PlanetFlareCoin");
 
 // Store data in /tmp directory.
 const IPFS_LOCATION = "/tmp/ipfs-planetflare";
+
+// Hardcoded endpoint to claim payment
+const PUBLISHER_ENDPOINT = "http://localhost:3000";
 
 const createIPFSNode = async (metricsEnabled) => {
   let node;
@@ -132,6 +136,22 @@ class PlanetFlare {
     const pinnedFiles = await this.cdnManager.getPinnedFiles();
   };
 
+  submitTokens = async () => {
+    try {
+      console.log(`Submitting tokens: ${this.paymentProtocol.tokens}`)
+      const res = await axios.post(PUBLISHER_ENDPOINT + "/verify_payment", {
+        tokens: this.paymentProtocol.tokens,
+        bountyID: "1234",
+        recipientAddress: this.peerId,
+      });
+      const { data, signature } = res.data;
+      const { bountyID, recipient, numTokens, nonce } = data;
+      log(`Received response from publisher: ${JSON.stringify(res.data)}`);
+    } catch (err) {
+      error(`Failed to submit tokens. ${err}`);
+    }
+  };
+
   handleCommand = async (command, args) => {
     switch (command) {
       // Shut down node gracefully
@@ -161,6 +181,10 @@ class PlanetFlare {
       case "set-payment-strategy":
         const { paymentStrategy } = args;
         this.paymentProtocol.setPaymentStrategy(paymentStrategy);
+        break;
+
+      case "submit-tokens":
+        this.submitTokens();
         break;
 
       default:

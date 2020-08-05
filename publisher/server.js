@@ -7,7 +7,7 @@ const cors = require("cors");
 const PlanetFlarePublisher = require('./planetflare-publisher');
 const PublisherStore = require('./publisher-store');
 const BucketHandler = require("./bucket-handler");
-const PORT = 3000;
+const PORT = 3001;
 
 let node;
 let publisherStore;
@@ -24,6 +24,15 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 
+
+app.get('/contractABI', (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  res.json({
+    abi: require('./ethereum').getPlanetFlareABI(),
+    address: require('./ethereum').getContractAddress()
+  });
+});
 
 /**
  * Generate tokens for clients requesting them [GET]. 

@@ -1,6 +1,7 @@
 const fs = require("fs").promises;
+const path = require('path');
 
-const DEFAULT_TOKEN_FILE = "../tokens.txt";
+const DEFAULT_TOKEN_FILE = path.join(__dirname, "../tokens.txt");
 
 const DEFAULT_PAYMENT_STRATEGY = async ({ token, peerId }) => {
   const data = token + "\n";

@@ -1,15 +1,7 @@
 "use strict";
 const pipe = require("it-pipe");
-const protons = require("protons");
 const { PAYMENT_STRATEGIES } = require("../strategies/payment-strategy");
 const { log, error } = require("../logger");
-
-// Define Protobuf schema
-const { Payment } = protons(`
-message Payment {
-  required string token = 1;
-}
-`);
 
 class PaymentProtocol {
   // Define the codec of our payment protocol
@@ -40,13 +32,15 @@ class PaymentProtocol {
    * @param {Stream} params.stream A pull-stream based stream to the peer
    */
   handler = async ({ connection, stream }) => {
+    const that = this;
     try {
       await pipe(stream, async function (source) {
         for await (const message of source) {
-          const { token } = Payment.decode(message);
+          const token = String(message);
+          log(`Received token ${token} from ${connection.remotePeer.toB58String()}!`);
           const peerId = connection.remotePeer.toB58String();
-          this.paymentStrategy({ token, peerId }).catch((err) =>
-            console.error(err)
+          that.paymentStrategy({ token, peerId }).catch((err) =>
+            error(err.message)
           );
         }
       });
@@ -54,7 +48,7 @@ class PaymentProtocol {
       // Close this stream so we don't leak it
       await pipe([], stream);
     } catch (err) {
-      console.error(err);
+      error(err.message);
     }
   };
 }

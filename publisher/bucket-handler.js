@@ -1,4 +1,5 @@
 const fs = require("fs").promises;
+const path = require("path");
 const credentials = require('./common/credentials');
 const { Buckets } = require("@textile/hub");
 const { Libp2pCryptoIdentity } = require("@textile/threads-core");
@@ -11,7 +12,7 @@ class BucketHandler {
     const [keyInfo, secret] = credentials.getCredentialsTextile();
     this.keyInfo = keyInfo;
     this.secret = secret;
-    this.indices = {}; 
+    this.indices = {};  // bucketKey -> (fileName -> cid)
   }
 
   async setup() {
@@ -23,7 +24,9 @@ class BucketHandler {
    */
   async getTextileIdentity(identityPath = 'textile-identity.txt') {
     try { 
-      return Libp2pCryptoIdentity.fromString(await fs.readFile(identityPath));
+      return Libp2pCryptoIdentity.fromString((
+        await fs.readFile(identityPath)
+      ).trim());
     } catch {
       const result = await Libp2pCryptoIdentity.fromRandom();
       await fs.writeFile(identityPath, result.toString());
@@ -49,10 +52,8 @@ class BucketHandler {
     let root; 
     try {
       root = await bucketClient.open(bucketName);
-      //console.log(`Found bucket ${bucketName}.`);
     } catch {
       root = await bucketClient.init(bucketName);
-      //console.log(`Created bucket ${bucketName}`);
     }
 
     return {
@@ -72,59 +73,88 @@ class BucketHandler {
   /**
    * Upsert files to bucket. 
    */
-  async upsertFiles(bucketName, filePaths) {
+  async upsertFiles(bucketName, localFilePaths) {
     const { bucketClient, bucketKey } = await this.getOrInit(bucketName);
+    const cidMap = {};
 
-    const promises = filePaths.map(async filePath => {
-      const buffer = await fs.readFile(filePath);
-      return bucketClient.pushPath(bucketKey, filePath, buffer);
-    });
-    await this.updateIndex(bucketName, filePaths);
-    return await Promise.all(promises);
+    for (let i = 0; i < localFilePaths.length; ++i) {
+      try {
+        const localFilePath = localFilePaths[i];
+        const buffer = await fs.readFile(localFilePath);
+        const filePath = path.basename(localFilePath);
+
+        const file = { 
+          path: filePath,
+          content: buffer
+        };
+        console.log(`Pushing file ${localFilePath} to ${bucketKey}`);
+        const res = await bucketClient.pushPath(bucketKey, filePath, file);
+        cidMap[filePath] = res.path.cid.toString();
+
+      } catch (err) {
+        console.log(`Exception on ${localFilePaths[i]}`);
+        console.log(err);
+      }
+    }
+
+    await this.updateIndex(bucketName, cidMap);
   }
 
   /**
    * Remove files from bucket.
    */
-  async removeFiles(bucketName, filePaths) {
+  async removeFiles(bucketName, localFilePaths) {
     const { bucketClient, bucketKey } = await this.getOrInit(bucketName);
 
-    for (let i = 0; i < filePaths.length; ++i) {
+    for (let i = 0; i < localFilePaths.length; ++i) {
       try {
-        await bucketClient.removePath(bucketKey, filePaths[i]);
+        const filePath = path.basename(localFilePaths[i]);
+        await bucketClient.removePath(bucketKey, filePath);
       } catch {}
     }
 
-    await this.updateIndex(bucketName, filePaths, true);
+    await this.updateIndex(bucketName, localFilePaths, true);
+  }
+
+  /**
+   * Remove a Textile bucket. 
+   */
+  async removeBucket(bucketName) {
+    const { bucketClient, bucketKey } = await this.getOrInit(bucketName);
+    await bucketClient.remove(bucketKey);
+    console.log(`Removed bucket ${bucketName}`);
   }
 
   /**
    * Initializes/updates index with new files. Indices are used to
    * track which files exist in a publisher's bucket.
    */
-  async updateIndex(bucketName, filePaths, remove = false) {
+  async updateIndex(bucketName, newCidMap, remove = false) {
     const { bucketClient, bucketKey } = await this.getOrInit(bucketName);
-    
-    if (bucketKey in this.indices) {
-      const oldIndex = this.indices[bucketKey];
+
+    if (!(bucketKey in this.indices)) {
       this.indices[bucketKey] = {
-        ...oldIndex,
-        paths: remove ? new Set([...oldIndex.paths, ...filePaths]) 
-          : new Set([...oldIndex.paths].filter(x => filePaths.has(x)))
-      }
-    } else {
-      this.indices[bucketKey] = {
-        author: this.identity.public.toString(),
+        publisher: this.identity.public.toString(),
         date: (new Date()).getTime(),
-        paths: new Set()
+        contents: {}
       }
     }
 
     const index = this.indices[bucketKey];
+
+    for (const [fileName, cid] of Object.entries(newCidMap)) {
+      if (remove) {
+        try {
+          delete index.contents[fileName];
+        } catch {}
+      } else {
+        index.contents[fileName] = cid;
+      }
+    }
+
     const buf = Buffer.from(JSON.stringify(index, null, 2));
     const path = "index.json";
     await bucketClient.pushPath(bucketKey, path, buf);
-
     return index;
   }
 

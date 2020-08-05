@@ -7,15 +7,13 @@ import CssBaseline from "@material-ui/core/CssBaseline";
 import AppBar from "@material-ui/core/AppBar";
 import Toolbar from "@material-ui/core/Toolbar";
 import Typography from "@material-ui/core/Typography";
-import IconButton from "@material-ui/core/IconButton";
-import Badge from "@material-ui/core/Badge";
 import Container from "@material-ui/core/Container";
 import Grid from "@material-ui/core/Grid";
 import Paper from "@material-ui/core/Paper";
-import NotificationsIcon from "@material-ui/icons/Notifications";
 import Balance from "./Balance";
 import Logs from "./Logs";
 import Status from "./Status";
+import Tokens from "./Tokens";
 
 const useStyles = makeStyles((theme) => ({
   appBar: {
@@ -62,6 +60,7 @@ export default function Main(props) {
   const [web3, setWeb3] = React.useState(null);
   const [pfcAbi, setPfcAbi] = React.useState(null);
   const [pfcContractAddress, setPfcContractAddress] = React.useState(null);
+  const [tokens, setTokens] = React.useState([]);
   const socketRef = useRef();
   const logsContainerRef = useRef(null);
   const fixedHeightPaper = clsx(classes.paper, classes.fixedHeight);
@@ -80,6 +79,8 @@ export default function Main(props) {
     });
 
     socketRef.current.on("logs", (data) => updateLogs(data));
+
+    socketRef.current.on("tokens", (data) => setTokens(data));
 
     if (!ethEnabled()) {
       alert(
@@ -139,6 +140,12 @@ export default function Main(props) {
     });
   };
 
+  const submitTokensHandler = () => {
+    socketRef.current.emit("command", {
+      command: "submit-tokens",
+    });
+  };
+
   React.useEffect(() => {
     // Remove the server-side injected CSS.
     const jssStyles = document.querySelector("#jss-server-side");
@@ -161,11 +168,7 @@ export default function Main(props) {
           >
             Provider Dashboard
           </Typography>
-          <IconButton color="inherit">
-            <Badge badgeContent={4} color="secondary">
-              <NotificationsIcon />
-            </Badge>
-          </IconButton>
+          <Tokens tokens={tokens} onSubmitTokens={submitTokensHandler} />
         </Toolbar>
       </AppBar>
       <main className={classes.content}>

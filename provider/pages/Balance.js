@@ -63,7 +63,7 @@ export default function Balance({ web3, pfcAbi, pfcContractAddress }) {
   };
 
   const open = Boolean(anchorEl);
-  const id = open ? "simple-popover" : undefined;
+  const id = open ? "balance-popover" : undefined;
 
   return (
     <React.Fragment>

@@ -1,15 +1,7 @@
 "use strict";
 const pipe = require("it-pipe");
-const protons = require("protons");
 const { PAYMENT_STRATEGIES } = require("../strategies/payment-strategy");
 const { log, error } = require("../logger");
-
-// Define Protobuf schema
-const { Payment } = protons(`
-message Payment {
-  required string token = 1;
-}
-`);
 
 class PaymentProtocol {
   // Define the codec of our payment protocol
@@ -20,8 +12,10 @@ class PaymentProtocol {
    * @param {Function} paymentStrategy Strategy that takes in { token, peerId } and
    *                                   handles the management of tokens.
    */
-  constructor(paymentStrategy = "DEFAULT") {
+  constructor(io, paymentStrategy = "DEFAULT") {
+    this.io = io;
     this.setPaymentStrategy(paymentStrategy);
+    this.tokens = [];
   }
 
   setPaymentStrategy = (paymentStrategy) => {
@@ -31,7 +25,7 @@ class PaymentProtocol {
     }
     log(`Setting payment strategy to ${paymentStrategy}.`);
     this.paymentStrategy = PAYMENT_STRATEGIES[paymentStrategy];
-  }
+  };
 
   /**
    * A simple handler to print incoming messages to the console
@@ -40,21 +34,31 @@ class PaymentProtocol {
    * @param {Stream} params.stream A pull-stream based stream to the peer
    */
   handler = async ({ connection, stream }) => {
+    const that = this;
     try {
       await pipe(stream, async function (source) {
         for await (const message of source) {
-          const { token } = Payment.decode(message);
-          const peerId = connection.remotePeer.toB58String();
-          this.paymentStrategy({ token, peerId }).catch((err) =>
-            console.error(err)
+          const token = String(message);
+          that.tokens.push(token);
+
+          log(
+            `Received token ${token} from ${connection.remotePeer.toB58String()}!`
           );
+
+          const peerId = connection.remotePeer.toB58String();
+          that
+            .paymentStrategy({ token, peerId })
+            .catch((err) => error(err.message));
         }
       });
 
       // Close this stream so we don't leak it
       await pipe([], stream);
+
+      // Notify UI
+      this.io.emit("tokens", this.tokens);
     } catch (err) {
-      console.error(err);
+      error(err.message);
     }
   };
 }

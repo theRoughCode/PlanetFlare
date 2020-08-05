@@ -6,6 +6,8 @@ let remainingTokens =
   JSON.parse(localStorage.getItem(LOCAL_STORAGE_PFC_TOKENS)) || [];
 let ipfs = null;
 
+const providerManager = new ProviderManager();
+
 /**
  * Ask for new tokens from the publisher.
  */
@@ -16,6 +18,9 @@ const requestTokens = async (num) => {
   return tokens;
 };
 
+/**
+ * Get data from IPFS
+ */
 const catFile = async (cid) => {
   if (ipfs == null) return;
   const chunks = [];
@@ -26,18 +31,59 @@ const catFile = async (cid) => {
 };
 
 /**
+ * Keep track of providers that served files
+ */
+const onReceiveBlock = (bitswap) => (peerId, block, exists) => {
+  bitswap._updateReceiveCountersInternal(peerId, block, exists);
+  if (exists) return;
+  providerManager.add(peerId, block.cid.toString());
+};
+
+const rewardProviders = (cid) => {
+  const providers = providerManager.get(cid);
+  if (providers == null || providers.length === 0) return;
+
+  Object.keys(providers).forEach((peerId) =>
+    rewardProvider(peerId, providers[peerId], cid)
+  );
+
+  // Once rewarded, remove to prevent buildup of stale data
+  providerManager.remove(cid);
+};
+
+const rewardProvider = async (peerId, numBlocksServed, cid) => {
+  if (ipfs == null) return;
+  const multiaddr = `/ip4/127.0.0.1/tcp/5001/ws/p2p/${peerId}`;
+  const protocol = "/planetflare/payment/1.0.0";
+  try {
+    const { stream } = await ipfs.libp2p.dialProtocol(multiaddr, protocol);
+    if (remainingTokens.length < numBlocksServed) throw "Not enough tokens!";
+
+    const tokens = remainingTokens.slice(0, numBlocksServed);
+    remainingTokens = remainingTokens.slice(numBlocksServed);
+    await stream.sink(() => tokens);
+
+    console.log(
+      `Rewarded ${peerId} for serving ${numBlocksServed} blocks of cid ${cid} with tokens: ${tokens.join(', ')}.`
+    );
+
+    stream.close();
+  } catch (error) {
+    console.error(`Failed to reward ${peerId}.\n${error}`);
+  }
+};
+
+/**
  * Retrieve files from candidate providers.
  */
 const getResources = async (pfcResources) => {
   const promises = pfcResources.map(async (resourceNode) => {
-    /** Pass in `remainingTokens.pop()` */
-
     const cid = resourceNode.getAttribute("data-pfc");
     console.log(`Retrieving ${cid}...`);
 
     const data = await catFile(cid);
-    console.log(`Data: ${data}`);
     resourceNode.innerHTML = data;
+    rewardProviders(cid);
   });
 
   await Promise.all(promises);
@@ -72,7 +118,20 @@ const main = async () => {
 };
 
 document.addEventListener("DOMContentLoaded", async () => {
-  ipfs = await Ipfs.create({ repo: "ipfs-" + Math.random() });
+  ipfs = await IPFS.create();
+
+  // Hack to ensure we're connected to server node
+  const serverPort = "62698";
+  const serverAddr = `/ip4/127.0.0.1/tcp/${serverPort}/ws/p2p/QmNqu6TNZCmXVQgPcebjTBddf6yagPz2e29A7oMxmhd6dS`;
+  await ipfs.swarm.connect(serverAddr);
+
+  // Hacky way to create a wrapper around internal bitswap function to retrieve provider IDs
+  ipfs.bitswap.Bitswap._updateReceiveCountersInternal =
+    ipfs.bitswap.Bitswap._updateReceiveCounters;
+  ipfs.bitswap.Bitswap._updateReceiveCounters = onReceiveBlock(
+    ipfs.bitswap.Bitswap
+  );
+
   const status = ipfs.isOnline() ? "online" : "offline";
   console.log(`Node status: ${status}`);
   console.log(`Peer ID: ${ipfs.libp2p.peerId.toB58String()}`);

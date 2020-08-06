@@ -94,12 +94,15 @@ app.post("/verify_payment", async (req, res) => {
         recipientAddress,
         bountyID
       );
-      console.log("created future payment", futurePayment);
     }
 
     console.log(`tokens: ${tokens}`);
     const result = await publisherStore.deleteTokens(tokens);
-    paymentManager.incrementFuturePayment(futurePayment, result.result.n);
+    futurePayment = paymentManager.incrementFuturePayment(
+      futurePayment,
+      result.result.n
+    );
+    console.log("future payment", futurePayment);
     res.json(futurePayment);
   } catch (error) {
     console.error(error);

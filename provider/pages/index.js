@@ -45,6 +45,10 @@ const useStyles = makeStyles((theme) => ({
     backgroundColor: "black",
     height: 400,
   },
+  logo: {
+    height: 45,
+    marginRight: 10,
+  },
 }));
 
 const MAX_LOGS_SIZE = 100;
@@ -177,6 +181,7 @@ export default function Main(props) {
       <CssBaseline />
       <AppBar position="absolute" className={classes.appBar}>
         <Toolbar>
+          <img src={'/pfc-logo.png'} className={classes.logo} alt="logo" />
           <Typography
             component="h1"
             variant="h6"

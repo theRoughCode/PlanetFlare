@@ -30,8 +30,12 @@ class CDNManager {
 
   getPinnedFiles = async () => {
     const pinnedFiles = [];
-    for await (const pinned of this.ipfs.pin.ls()) {
-      pinnedFiles.push(pinned);
+    try {
+      for await (const pinned of this.ipfs.pin.ls()) {
+        pinnedFiles.push(pinned);
+      }
+    } catch (error) {
+      console.error(error);      
     }
     return pinnedFiles;
   };

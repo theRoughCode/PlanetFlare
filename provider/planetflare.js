@@ -165,7 +165,7 @@ class PlanetFlare {
           files = files.map(({ cid }) => cid.toString());
           this.io.emit("pinned-files", files);
         })
-        .catch(console.error);
+        .catch(() => `Failed to get pinned files. ${err.message}.`);
 
       // Update PFC balance
       this.getPfcBalance()
@@ -227,7 +227,6 @@ class PlanetFlare {
     const balance = await this.pfcContract.methods
       .balanceOf(this.walletAddress)
       .call();
-    console.log("balance: " + balance);
     return balance;
   };
 
@@ -286,7 +285,8 @@ class PlanetFlare {
         break;
 
       case "get-balance":
-        this.getPfcBalance();
+        const balance = await this.getPfcBalance();
+        console.log("balance: " + balance);
         break;
 
       default:

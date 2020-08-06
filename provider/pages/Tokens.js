@@ -56,7 +56,7 @@ export default function Tokens({ tokens, onSubmitTokens }) {
   const TokenDialog = ({ tokensObj }) => (
     <MuiDialogContent dividers className={classes.root}>
       {Object.keys(tokensObj).map((cid, i) => (
-        <TokenList cid={cid} tokens={tokensObj[cid]} />
+        <TokenList key={i} cid={cid} tokens={tokensObj[cid]} />
       ))}
     </MuiDialogContent>
   );

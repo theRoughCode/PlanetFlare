@@ -1,6 +1,6 @@
 "use strict";
 
-const PUBLISHER_NAME = `${location.hostname}` || "localhost:3000"; // Replace with publisher's API gateway.
+const PUBLISHER_NAME = `${location.hostname}` || "localhost:3001"; // Replace with publisher's API gateway.
 const LOCAL_STORAGE_PFC_TOKENS = "pfc-tokens";
 let remainingTokens =
   JSON.parse(localStorage.getItem(LOCAL_STORAGE_PFC_TOKENS)) || [];
@@ -59,12 +59,16 @@ const rewardProvider = async (peerId, numBlocksServed, cid) => {
     const { stream } = await ipfs.libp2p.dialProtocol(multiaddr, protocol);
     if (remainingTokens.length < numBlocksServed) throw "Not enough tokens!";
 
-    const tokens = remainingTokens.slice(0, numBlocksServed);
+    const tokens = remainingTokens
+      .slice(0, numBlocksServed)
+      .map((token) => JSON.stringify({ token, cid }));
     remainingTokens = remainingTokens.slice(numBlocksServed);
     await stream.sink(() => tokens);
 
     console.log(
-      `Rewarded ${peerId} for serving ${numBlocksServed} blocks of cid ${cid} with tokens: ${tokens.join(', ')}.`
+      `Rewarded ${peerId} for serving ${numBlocksServed} blocks of cid ${cid} with tokens: ${tokens.join(
+        ", "
+      )}.`
     );
 
     stream.close();
@@ -121,7 +125,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   ipfs = await IPFS.create();
 
   // Hack to ensure we're connected to server node
-  const serverPort = "62698";
+  const serverPort = "64575";
   const serverAddr = `/ip4/127.0.0.1/tcp/${serverPort}/ws/p2p/QmNqu6TNZCmXVQgPcebjTBddf6yagPz2e29A7oMxmhd6dS`;
   await ipfs.swarm.connect(serverAddr);
 

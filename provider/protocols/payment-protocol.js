@@ -15,7 +15,7 @@ class PaymentProtocol {
   constructor(io, paymentStrategy = "DEFAULT") {
     this.io = io;
     this.setPaymentStrategy(paymentStrategy);
-    this.tokens = [];
+    this.tokens = {};
   }
 
   setPaymentStrategy = (paymentStrategy) => {
@@ -38,8 +38,9 @@ class PaymentProtocol {
     try {
       await pipe(stream, async function (source) {
         for await (const message of source) {
-          const token = String(message);
-          that.tokens.push(token);
+          const { token, cid } = JSON.parse(String(message));
+          if (!that.tokens.hasOwnProperty(cid)) that.tokens[cid] = [];
+          that.tokens[cid].push(token);
 
           log(
             `Received token ${token} from ${connection.remotePeer.toB58String()}!`
@@ -47,7 +48,7 @@ class PaymentProtocol {
 
           const peerId = connection.remotePeer.toB58String();
           that
-            .paymentStrategy({ token, peerId })
+            .paymentStrategy({ token, cid, peerId })
             .catch((err) => error(err.message));
         }
       });

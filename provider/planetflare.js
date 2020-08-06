@@ -1,4 +1,5 @@
 const fs = require("fs");
+const Web3 = require('web3');
 const axios = require("axios");
 const IPFS = require("ipfs");
 const Repo = require("ipfs-repo");
@@ -18,6 +19,10 @@ const IPFS_LOCATION = "/tmp/ipfs-planetflare";
 
 // Hardcoded endpoint to claim payment
 const PUBLISHER_ENDPOINT = "http://localhost:3001";
+
+// HARCODED ENDPOINT
+const WEB3_ENDPOINT = "ws://localhost:8545";
+
 
 const createIPFSNode = async (metricsEnabled) => {
   let node;
@@ -60,9 +65,25 @@ class PlanetFlare {
     this.paymentStrategy = "DEFAULT";
     this.cacheStrategy = "DEFAULT";
     this.abi = PFC.abi;
+    this.web3 = new Web3(WEB3_ENDPOINT);
+
     fs.readFile("./contract-address.txt", "utf8", (err, data) => {
       if (err) console.error("Failed to read contract-address.txt", err);
       else this.contractAddress = data.trim();
+
+      this.pfcContract = new this.web3.eth.Contract(PFC.abi, this.contractAddress);
+    });
+
+    fs.readFile('./web3-private-key.txt', 'ascii', (err, data) => {
+      if (err) {
+        console.error('Failed to read web3-private-key.txt', err);
+        return;
+      }
+      const privateKey = data.trim();
+
+      this.account = this.web3.eth.accounts.privateKeyToAccount(privateKey);
+
+      this.walletAddress = this.account.address;
     });
   }
 
@@ -137,10 +158,10 @@ class PlanetFlare {
     const pinnedFiles = await this.cdnManager.getPinnedFiles();
   };
 
-  setWalletAddress = (walletAddress) => {
-    console.log(`Setting walletAddress to ${walletAddress}`);
-    this.walletAddress = walletAddress;
-  };
+  // setWalletAddress = (walletAddress) => {
+  //   console.log(`Setting walletAddress to ${walletAddress}`);
+  //   this.walletAddress = walletAddress;
+  // };
 
   submitTokens = () => {
     const tokens = this.paymentProtocol.tokens;
@@ -163,6 +184,17 @@ class PlanetFlare {
     } catch (err) {
       error(`Failed to submit tokens. ${err}`);
     }
+
+    await this.pfcContract.methods.claimPayment(bountyID, numTokens, nonce, signature).send(
+      {from: this.walletAddress}
+    )
+  };
+
+  getPfcBalance = async () => {
+    const balance = await this.pfcContract.methods.balanceOf(this.walletAddress).call();
+    console.log('balance: ' + balance);
+
+    this.io.emit("balance", balance);
   };
 
   handleCommand = async (command, args) => {
@@ -198,6 +230,11 @@ class PlanetFlare {
 
       case "submit-tokens":
         this.submitTokens();
+        break;
+
+      case "get-balance":
+        console.log("getting balance");
+        this.getPfcBalance();
         break;
 
       default:

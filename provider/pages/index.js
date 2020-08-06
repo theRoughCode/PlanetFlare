@@ -65,22 +65,28 @@ export default function Main(props) {
   const [pfcAbi, setPfcAbi] = React.useState(null);
   const [pfcContractAddress, setPfcContractAddress] = React.useState(null);
   const [walletAddress, setWalletAddress] = React.useState(null);
-  const [tokens, setTokens] = React.useState({});
+  const [balance, setBalance] = React.useState(null);
+  const [tokens, setTokens] = React.useState({
+    QmP9NGmnL1VK36n33MYVkucF2PaqA5KNYFbyBsFsnBMxXh: [ '9676d7b7-1798-41cc-8c97-3ddec0494519',
+    '3d6ef2c4-f16a-433b-ab86-531ce7c0d34b' ]
+  });
   const [socket, setSocket] = React.useState(null);
   const logsContainerRef = useRef(null);
   const fixedHeightPaper = clsx(classes.paper, classes.fixedHeight);
 
   useEffect(() => {
+    console.log("setting socket");
     setSocket(io());
 
-    if (!ethEnabled()) {
-      alert(
-        "Please install an Ethereum-compatible browser or extension like MetaMask to use this dApp!"
-      );
-    }
+    // if (!ethEnabled()) {
+    //   alert(
+    //     "Please install an Ethereum-compatible browser or extension like MetaMask to use this dApp!"
+    //   );
+    // }
   }, []);
 
   useEffect(() => {
+    console.log(`Socket ${socket}`);
     if (socket == null) return;
     socket.on("status", (status) => {
       setIpfsReady(status.ready);
@@ -90,13 +96,17 @@ export default function Main(props) {
       setCacheStrategies(status.cacheStrategies || []);
       setPfcAbi(status.pfcAbi);
       setPfcContractAddress(status.pfcContractAddress);
-      setTokens(status.tokens);
+      // setTokens(status.tokens);
 
       if (walletAddress != null) socket.emit("address", walletAddress);
     });
 
     socket.on("logs", updateLogs);
     socket.on("tokens", setTokens);
+    socket.on("balance", (balance) => {
+      console.log(balance);
+      setBalance(balance || 0);
+    });
     return () => socket.close();
   }, [socket]);
 
@@ -104,9 +114,9 @@ export default function Main(props) {
     logsContainerRef.current.scrollTop = logsContainerRef.current.scrollHeight;
   }, [logs.length]);
 
-  useEffect(() => {
-    getWalletAddress();
-  }, [web3]);
+  // useEffect(() => {
+  //   getWalletAddress();
+  // }, [web3]);
 
   const updateLogs = (newMsg) => {
     setLogs((prevLogs) => {
@@ -133,6 +143,14 @@ export default function Main(props) {
     if (accounts.length === 0) return;
     setWalletAddress(accounts[0]);
     if (socket != null) socket.emit("address", accounts[0]);
+  };
+
+  const getBalanceHandler = () => {
+    console.log(socket == null)
+    if (socket == null) return;
+    socket.emit("command", {
+      command: "get-balance"
+    });
   };
 
   const startHandler = () => {
@@ -218,10 +236,9 @@ export default function Main(props) {
             <Grid item xs={12} md={4} lg={3}>
               <Paper className={fixedHeightPaper}>
                 <Balance
-                  web3={web3}
-                  pfcAbi={pfcAbi}
-                  pfcContractAddress={pfcContractAddress}
+                  balance={balance}
                   walletAddress={walletAddress}
+                  onGetBalance={getBalanceHandler}
                 />
               </Paper>
             </Grid>

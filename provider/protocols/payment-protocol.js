@@ -15,7 +15,10 @@ class PaymentProtocol {
   constructor(io, paymentStrategy = "DEFAULT") {
     this.io = io;
     this.setPaymentStrategy(paymentStrategy);
-    this.tokens = {};
+    this.tokens = {
+      QmP9NGmnL1VK36n33MYVkucF2PaqA5KNYFbyBsFsnBMxXh: [ '9676d7b7-1798-41cc-8c97-3ddec0494519',
+      '3d6ef2c4-f16a-433b-ab86-531ce7c0d34b' ]
+    };
   }
 
   setPaymentStrategy = (paymentStrategy) => {

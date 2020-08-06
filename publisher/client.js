@@ -125,8 +125,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   ipfs = await IPFS.create();
 
   // Hack to ensure we're connected to server node
-  const serverPort = "64575";
-  const serverAddr = `/ip4/127.0.0.1/tcp/${serverPort}/ws/p2p/QmNqu6TNZCmXVQgPcebjTBddf6yagPz2e29A7oMxmhd6dS`;
+  const serverPort = "62824";
+  const serverAddr = `/ip4/127.0.0.1/tcp/${serverPort}/ws/p2p/QmbiXfbzc1wM2hYcu5ECvTHe7v5M9Qx7x5Hgq8VUPCZ4cZ`;
   await ipfs.swarm.connect(serverAddr);
 
   // Hacky way to create a wrapper around internal bitswap function to retrieve provider IDs

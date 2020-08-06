@@ -61,7 +61,7 @@ export default function Tokens({ tokens, onSubmitTokens }) {
     </MuiDialogContent>
   );
 
-  const numTokens = Object.values(tokens).reduce((acc, t) => acc + t.length, 0);
+  const numTokens = (tokens != null) ? Object.values(tokens).reduce((acc, t) => acc + t.length, 0) : 0;
 
   return (
     <React.Fragment>

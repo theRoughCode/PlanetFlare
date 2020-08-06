@@ -37,7 +37,7 @@ io.on("connect", (socket) => {
   }
   socket.on("start", planetflare.start);
   socket.on("shutdown", planetflare.stop);
-  socket.on("address", planetflare.setWalletAddress);
+  // socket.on("address", planetflare.setWalletAddress);
 });
 
 nextApp.prepare().then(() => {

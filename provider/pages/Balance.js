@@ -25,39 +25,23 @@ const getDate = () =>
   });
 
 export default function Balance({
-  web3,
-  pfcAbi,
-  pfcContractAddress,
+  balance,
   walletAddress,
+  // onGetBalance,
 }) {
   const classes = useStyles();
   const pollInterval = 1000;
   const [anchorEl, setAnchorEl] = useState(null);
-  const [balance, setBalance] = useState(0);
   const [date, setDate] = useState("15 March, 2019 13:25:11");
 
-  // Poll for updated account balance
-  useEffect(() => {
-    if (
-      web3 == null ||
-      pfcAbi == null ||
-      pfcContractAddress == null ||
-      walletAddress == null
-    )
-      return;
-    const interval = setInterval(async () => {
-      try {
-        const pfcContract = new web3.eth.Contract(pfcAbi, pfcContractAddress);
-        const newBalance =
-          (await pfcContract.methods.balanceOf(walletAddress).call()) || 0;
-        setBalance(newBalance);
-      } catch (error) {
-        console.error("Failed to retrieve account balance.", error);
-      }
-    }, pollInterval);
+  // // Poll for updated account balance
+  // useEffect(() => {
+  //   const interval = setInterval(async () => {
+  //     onGetBalance();
+  //   }, pollInterval);
 
-    return () => clearInterval(interval);
-  }, [web3, pfcAbi, pfcContractAddress, walletAddress]);
+  //   return () => clearInterval(interval);
+  // }, []);
 
   useEffect(() => setDate(getDate()), [walletAddress, balance]);
 

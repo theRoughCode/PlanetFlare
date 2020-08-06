@@ -3,6 +3,7 @@ import Dropzone from "../dropzone/Dropzone";
 import "./Upload.css";
 import Progress from "../progress/Progress";
 import BountyItem from '../bountyItem/BountyItem';
+import BountyTable from '../bountyTable/BountyTable';
 
 class Upload extends Component {
   constructor(props) {
@@ -133,53 +134,66 @@ class Upload extends Component {
     }
   }
 
-  renderBountyList() {
-    if (!this.state.loaded) return null;
+  // renderBountyList() {
+  //   if (!this.state.loaded) return null;
 
-    const bountyItems = this.state.bounties.map(
-      bounty =>
-      <BountyItem 
-        key={bounty[0]}
-        className="bountyItem"
-        id={bounty[0]}
-        publisher={bounty[1]}
-        bucketID={bounty[2]}
-        costPerToken={bounty[3]}
-        lastUpdated={bounty[4]}
-      >
-      </BountyItem>
-    );
+  //     // <BountyItem 
+  //     //   key={bounty[0]}
+  //     //   className="bountyItem"
+  //     //   id={bounty[0]}
+  //     //   publisher={bounty[1]}
+  //     //   bucketID={bounty[2]}
+  //     //   costPerToken={bounty[3]}
+  //     //   lastUpdated={bounty[4]}
+  //     // >
+  //     // </BountyItem>
+  //   );
 
-    let bodyItem;
-    if (bountyItems.length > 0) {
-      bodyItem = (<table>
-        <thead>
-          <tr>
-            <th>Bounty ID</th>
-            <th>Publisher Address</th>
-            <th>Bucket ID</th>
-            <th>Cost per token</th>
-          </tr>
-        </thead>
-        <tbody>
-          {bountyItems}
-        </tbody>
-      </table>);
-    }
-    else
-      bodyItem = (<p className="emptyBountyList">No Bounties :(</p>);
+  //   // let bodyItem;
+  //   // if (bountyItems.length > 0) {
+  //   //   bodyItem = (<table>
+  //   //     <thead>
+  //   //       <tr>
+  //   //         <th>Bounty ID</th>
+  //   //         <th>Publisher Address</th>
+  //   //         <th>Bucket ID</th>
+  //   //         <th>Cost per token</th>
+  //   //       </tr>
+  //   //     </thead>
+  //   //     <tbody>
+  //   //       {bountyItems}
+  //   //     </tbody>
+  //   //   </table>);
+  //   // }
+  //   // else
+  //   //   bodyItem = (<p className="emptyBountyList">No Bounties :(</p>);
 
-    return (
-      <div className="bountyList">
-        {bodyItem}
-      </div>
-    );
-  }
+  //   // return (
+  //   //   <div className="bountyList">
+  //   //     {bodyItem}
+  //   //   </div>
+  //   // );
+  // }
 
   render() {
+    let bountyItems = null;
+    if (this.state.bounties) {
+      bountyItems = this.state.bounties.map(
+        bounty => {
+          return {
+            id: bounty[0],
+            publisher: bounty[1],
+            bucketId: bounty[2],
+            costPerToken: bounty[3],
+            lastUpdated: bounty[4]
+          }
+        }
+      );
+    }
+
     return (
       <div className="Upload">
-        <span className="Title">Upload Files</span>
+        <span className="Title">Create Bounty</span>
         <div className="Content">
           <div>
             <Dropzone
@@ -199,7 +213,7 @@ class Upload extends Component {
           </div>
         </div>
         <div className="Actions">{this.renderActions()}</div>
-        {this.renderBountyList()}
+        {bountyItems ? <BountyTable rows={bountyItems} /> : null}
       </div>
     );
   }

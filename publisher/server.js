@@ -99,7 +99,7 @@ app.post("/verify_payment", async (req, res) => {
 
     console.log(`tokens: ${tokens}`);
     const result = await publisherStore.deleteTokens(tokens);
-    paymentManager.incrementFuturePayment(futurePayment, result.result.n);
+    futurePayment = paymentManager.incrementFuturePayment(futurePayment, result.result.n);
     res.json(futurePayment);
   } catch (error) {
     console.error(error);

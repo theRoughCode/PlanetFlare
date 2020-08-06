@@ -19,6 +19,9 @@ const IPFS_LOCATION = "/tmp/ipfs-planetflare";
 // Hardcoded endpoint to claim payment
 const PUBLISHER_ENDPOINT = "http://localhost:3001";
 
+// Interval to update UI state
+const UI_UPDATE_RATE = 1500;
+
 const createIPFSNode = async (metricsEnabled) => {
   let node;
   try {
@@ -64,6 +67,7 @@ class PlanetFlare {
       if (err) console.error("Failed to read contract-address.txt", err);
       else this.contractAddress = data.trim();
     });
+    this.ioUpdater = null;
   }
 
   start = async () => {
@@ -97,13 +101,18 @@ class PlanetFlare {
       pfcContractAddress: this.contractAddress,
       tokens: this.paymentProtocol.tokens || {},
     });
+
+    // Start sending updates of node state to frontend
+    this.startIoUpdater();
   };
 
   stop = async () => {
     log("Shutting down IPFS node...");
     await this.node.stop();
-    log("Stopped IPFS node...");
+    log("Stopped IPFS node.");
     this.io.emit("status", { ready: false });
+    clearInterval(this.ioUpdater);
+    this.ioUpdater = null;
   };
 
   initProtocols = () => {
@@ -137,6 +146,34 @@ class PlanetFlare {
     const pinnedFiles = await this.cdnManager.getPinnedFiles();
   };
 
+  startIoUpdater = () => {
+    this.ioUpdater = setInterval(async () => {
+      this.cdnManager
+        .getPinnedFiles()
+        .then((files) => {
+          files = files.map(({ cid }) => cid.toString());
+          this.io.emit("pinned-files", files);
+        })
+        .catch(console.error);
+    }, UI_UPDATE_RATE);
+  };
+
+  provideBucketContents = async (bucketId) => {
+    const ipnsPage = `https://hub.textile.io/ipns/${bucketId}/index.json`;
+    const page = await axios.get(ipnsPage);
+    const contents = page.data.contents;
+    const cids = Object.values(contents);
+    await Promise.all(
+      cids.map(async (cid) => {
+        await this.cdnManager.retrieveFileFromRemote(cid, true, true);
+      })
+    );
+  };
+
+  provideContents = async (cid) => {
+    await this.cdnManager.retrieveFileFromRemote(cid, true, true);
+  };
+
   setWalletAddress = (walletAddress) => {
     console.log(`Setting walletAddress to ${walletAddress}`);
     this.walletAddress = walletAddress;
@@ -151,22 +188,26 @@ class PlanetFlare {
 
   submitTokensForCid = async (tokens, cid) => {
     try {
-      log(`Submitting tokens: [${tokens.join(', ')}] for cid ${cid}`);
+      log(`Submitting tokens: [${tokens.join(", ")}] for cid ${cid}`);
       const res = await axios.post(PUBLISHER_ENDPOINT + "/verify_payment", {
         tokens,
         bountyID: cid,
         recipientAddress: this.walletAddress,
       });
       const { data, signature } = res.data;
-      const { bountyID, recipient, numTokens, nonce } = data;
+      const { bountyID, numTokens, nonce } = data;
       log(`Received response from publisher: ${JSON.stringify(res.data)}`);
+      PlanetFlareContract.methods
+        .claimPayment(bountyID, numTokens, nonce, signature)
+        .send({ from: this.walletAddress });
     } catch (err) {
       error(`Failed to submit tokens. ${err}`);
     }
   };
 
   handleCommand = async (command, args) => {
-    switch (command) {
+      log(command, args);
+      switch (command) {
       // Shut down node gracefully
       case "close":
         this.stop().catch((err) => {
@@ -200,8 +241,25 @@ class PlanetFlare {
         this.submitTokens();
         break;
 
+      case "provide-bucket":
+        const bucketId = args[0];
+        this.provideBucketContents(bucketId);
+        break;
+
+      case "provide-data":
+        const cid = args[0];
+        this.provideContents(cid);
+        break;
+
+      case "ls-pinned":
+        this.cdnManager.getPinnedFiles().then(console.log).catch(console.error);
+        break;
+
+      case "clear-pinned":
+        this.cdnManager.unpinFiles();
+        break;
+
       default:
-        log(command, args);
         break;
     }
   };

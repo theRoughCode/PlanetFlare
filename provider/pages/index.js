@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import Head from "next/head";
 import Web3 from "web3";
 import io from "socket.io-client";
 import clsx from "clsx";
@@ -14,6 +15,8 @@ import Balance from "./Balance";
 import Logs from "./Logs";
 import Status from "./Status";
 import Tokens from "./Tokens";
+import Upload from "./Upload";
+import Pinned from "./Pinned";
 
 const useStyles = makeStyles((theme) => ({
   appBar: {
@@ -61,6 +64,7 @@ export default function Main(props) {
   const [paymentStrategies, setPaymentStrategies] = React.useState(["DEFAULT"]);
   const [cacheStrategies, setCacheStrategies] = React.useState(["DEFAULT"]);
   const [logs, setLogs] = React.useState([]);
+  const [pinned, setPinned] = React.useState([]);
   const [web3, setWeb3] = React.useState(null);
   const [pfcAbi, setPfcAbi] = React.useState(null);
   const [pfcContractAddress, setPfcContractAddress] = React.useState(null);
@@ -90,13 +94,14 @@ export default function Main(props) {
       setCacheStrategies(status.cacheStrategies || []);
       setPfcAbi(status.pfcAbi);
       setPfcContractAddress(status.pfcContractAddress);
-      setTokens(status.tokens);
+      setTokens(status.tokens || {});
 
       if (walletAddress != null) socket.emit("address", walletAddress);
     });
 
     socket.on("logs", updateLogs);
-    socket.on("tokens", setTokens);
+    socket.on("tokens", (tokens) => setTokens(tokens || {}));
+    socket.on("pinned-files", (cids) => setPinned(cids || []));
     return () => socket.close();
   }, [socket]);
 
@@ -161,6 +166,13 @@ export default function Main(props) {
     });
   };
 
+  const submitBucketIdHandler = (bucketId) => {
+    socket.emit("command", {
+      command: "provide-bucket",
+      args: [bucketId],
+    });
+  };
+
   const submitTokensHandler = () => {
     console.log("Submitting tokens!");
     socket.emit("command", {
@@ -178,10 +190,13 @@ export default function Main(props) {
 
   return (
     <div>
+      <Head>
+        <link rel="shortcut icon" href="/favicon.ico" />
+      </Head>
       <CssBaseline />
       <AppBar position="absolute" className={classes.appBar}>
         <Toolbar>
-          <img src={'/pfc-logo.png'} className={classes.logo} alt="logo" />
+          <img src={"/pfc-logo.png"} className={classes.logo} alt="logo" />
           <Typography
             component="h1"
             variant="h6"
@@ -191,6 +206,7 @@ export default function Main(props) {
           >
             Provider Dashboard
           </Typography>
+          <Upload onSubmitUpload={submitBucketIdHandler} />
           <Tokens tokens={tokens} onSubmitTokens={submitTokensHandler} />
         </Toolbar>
       </AppBar>
@@ -226,12 +242,18 @@ export default function Main(props) {
               </Paper>
             </Grid>
             {/* Logs */}
-            <Grid item xs={12}>
+            <Grid item xs={12} md={8} lg={9}>
               <Paper
                 ref={logsContainerRef}
                 className={clsx(classes.paper, classes.logsBackground)}
               >
                 <Logs logs={logs} />
+              </Paper>
+            </Grid>
+            {/* Pinned files */}
+            <Grid item xs={12} md={4} lg={3}>
+              <Paper className={fixedHeightPaper}>
+                <Pinned pinned={pinned} />
               </Paper>
             </Grid>
           </Grid>

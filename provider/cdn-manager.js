@@ -39,7 +39,7 @@ class CDNManager {
   /**
    * Announce to DHT that we are providing the given `cid`.
    */
-  provideFile = async (cid, timeout = 1000) => {
+  provideFile = async (cid, timeout = 5000) => {
     try {
       await all(this.ipfs.dht.provide(cid, { timeout }));
       log(`Provided ${cid}.`);

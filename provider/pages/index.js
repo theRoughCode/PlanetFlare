@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import Head from "next/head";
 import Web3 from "web3";
 import io from "socket.io-client";
 import clsx from "clsx";
@@ -14,6 +15,7 @@ import Balance from "./Balance";
 import Logs from "./Logs";
 import Status from "./Status";
 import Tokens from "./Tokens";
+import Upload from "./Upload";
 
 const useStyles = makeStyles((theme) => ({
   appBar: {
@@ -161,6 +163,13 @@ export default function Main(props) {
     });
   };
 
+  const submitBucketIdHandler = (bucketId) => {
+    socket.emit("command", {
+      command: "provide-bucket",
+      args: [bucketId],
+    });
+  };
+
   const submitTokensHandler = () => {
     console.log("Submitting tokens!");
     socket.emit("command", {
@@ -178,10 +187,13 @@ export default function Main(props) {
 
   return (
     <div>
+      <Head>
+        <link rel="shortcut icon" href="/favicon.ico" />
+      </Head>
       <CssBaseline />
       <AppBar position="absolute" className={classes.appBar}>
         <Toolbar>
-          <img src={'/pfc-logo.png'} className={classes.logo} alt="logo" />
+          <img src={"/pfc-logo.png"} className={classes.logo} alt="logo" />
           <Typography
             component="h1"
             variant="h6"
@@ -191,6 +203,7 @@ export default function Main(props) {
           >
             Provider Dashboard
           </Typography>
+          <Upload onSubmitUpload={submitBucketIdHandler} />
           <Tokens tokens={tokens} onSubmitTokens={submitTokensHandler} />
         </Toolbar>
       </AppBar>

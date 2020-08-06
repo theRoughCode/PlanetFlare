@@ -10,7 +10,7 @@ class PaymentManager {
 
     createFuturePayment(recipientAddress, bountyID) {
         const futurePaymentData = {
-            recipeint: recipientAddress,
+            recipient: recipientAddress,
             bountyID: bountyID,
             numTokens: 0,
             nonce: uuidToDecimal(uuid.v4())

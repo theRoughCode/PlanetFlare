@@ -8,6 +8,7 @@ import Dialog from "@material-ui/core/Dialog";
 import MuiDialogTitle from "@material-ui/core/DialogTitle";
 import MuiDialogContent from "@material-ui/core/DialogContent";
 import MuiDialogActions from "@material-ui/core/DialogActions";
+import ListSubheader from "@material-ui/core/ListSubheader";
 import CloseIcon from "@material-ui/icons/Close";
 import Typography from "@material-ui/core/Typography";
 
@@ -41,10 +42,31 @@ export default function Tokens({ tokens, onSubmitTokens }) {
     handleClose();
   };
 
+  const TokenList = ({ cid, tokens }) => (
+    <React.Fragment>
+      <ListSubheader>{cid}</ListSubheader>
+      {tokens.map((token, i) => (
+        <Typography key={i} gutterBottom>
+          {token}
+        </Typography>
+      ))}
+    </React.Fragment>
+  );
+
+  const TokenDialog = ({ tokensObj }) => (
+    <MuiDialogContent dividers className={classes.root}>
+      {Object.keys(tokensObj).map((cid, i) => (
+        <TokenList cid={cid} tokens={tokensObj[cid]} />
+      ))}
+    </MuiDialogContent>
+  );
+
+  const numTokens = Object.values(tokens).reduce((acc, t) => acc + t.length, 0);
+
   return (
     <React.Fragment>
       <IconButton color="inherit" onClick={handleClickOpen}>
-        <Badge badgeContent={tokens.length} color="secondary">
+        <Badge badgeContent={numTokens} color="secondary">
           <TokensIcon />
         </Badge>
       </IconButton>
@@ -63,13 +85,7 @@ export default function Tokens({ tokens, onSubmitTokens }) {
             <CloseIcon />
           </IconButton>
         </MuiDialogTitle>
-        <MuiDialogContent dividers className={classes.root}>
-          {tokens.map((token, i) => (
-            <Typography key={i} gutterBottom>
-              {token}
-            </Typography>
-          ))}
-        </MuiDialogContent>
+        <TokenDialog tokensObj={tokens} />
         <MuiDialogActions>
           <Button autoFocus onClick={submitTokens} color="primary">
             Submit tokens

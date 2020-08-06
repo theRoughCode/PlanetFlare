@@ -17,7 +17,7 @@ const PFC = require("./build/contracts/PlanetFlareCoin");
 const IPFS_LOCATION = "/tmp/ipfs-planetflare";
 
 // Hardcoded endpoint to claim payment
-const PUBLISHER_ENDPOINT = "http://localhost:3000";
+const PUBLISHER_ENDPOINT = "http://localhost:3001";
 
 const createIPFSNode = async (metricsEnabled) => {
   let node;
@@ -95,6 +95,7 @@ class PlanetFlare {
       cacheStrategies: Object.keys(CACHE_STRATEGIES),
       pfcAbi: this.abi,
       pfcContractAddress: this.contractAddress,
+      tokens: this.paymentProtocol.tokens || {},
     });
   };
 
@@ -113,7 +114,7 @@ class PlanetFlare {
     );
 
     // Enable payment protocol
-    this.paymentProtocol = new PaymentProtocol(this.paymentStrategy);
+    this.paymentProtocol = new PaymentProtocol(this.io, this.paymentStrategy);
     this.node.libp2p.handle(
       this.paymentProtocol.PROTOCOL,
       this.paymentProtocol.handler
@@ -136,13 +137,25 @@ class PlanetFlare {
     const pinnedFiles = await this.cdnManager.getPinnedFiles();
   };
 
-  submitTokens = async () => {
+  setWalletAddress = (walletAddress) => {
+    console.log(`Setting walletAddress to ${walletAddress}`);
+    this.walletAddress = walletAddress;
+  };
+
+  submitTokens = () => {
+    const tokens = this.paymentProtocol.tokens;
+    Object.keys(tokens).forEach((cid) =>
+      this.submitTokensForCid(tokens[cid], cid)
+    );
+  };
+
+  submitTokensForCid = async (tokens, cid) => {
     try {
-      console.log(`Submitting tokens: ${this.paymentProtocol.tokens}`)
+      log(`Submitting tokens: [${tokens.join(', ')}] for cid ${cid}`);
       const res = await axios.post(PUBLISHER_ENDPOINT + "/verify_payment", {
-        tokens: this.paymentProtocol.tokens,
-        bountyID: "1234",
-        recipientAddress: this.peerId,
+        tokens,
+        bountyID: cid,
+        recipientAddress: this.walletAddress,
       });
       const { data, signature } = res.data;
       const { bountyID, recipient, numTokens, nonce } = data;

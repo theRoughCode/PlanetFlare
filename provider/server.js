@@ -26,6 +26,7 @@ io.on("connect", (socket) => {
       cacheStrategies: Object.keys(CACHE_STRATEGIES),
       pfcAbi: planetflare.abi,
       pfcContractAddress: planetflare.contractAddress,
+      tokens: planetflare.paymentProtocol.tokens || {},
     });
 
     socket.on(
@@ -36,6 +37,7 @@ io.on("connect", (socket) => {
   }
   socket.on("start", planetflare.start);
   socket.on("shutdown", planetflare.stop);
+  socket.on("address", planetflare.setWalletAddress);
 });
 
 nextApp.prepare().then(() => {

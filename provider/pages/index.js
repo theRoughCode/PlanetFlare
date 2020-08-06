@@ -60,15 +60,25 @@ export default function Main(props) {
   const [web3, setWeb3] = React.useState(null);
   const [pfcAbi, setPfcAbi] = React.useState(null);
   const [pfcContractAddress, setPfcContractAddress] = React.useState(null);
-  const [tokens, setTokens] = React.useState([]);
-  const socketRef = useRef();
+  const [walletAddress, setWalletAddress] = React.useState(null);
+  const [tokens, setTokens] = React.useState({});
+  const [socket, setSocket] = React.useState(null);
   const logsContainerRef = useRef(null);
   const fixedHeightPaper = clsx(classes.paper, classes.fixedHeight);
 
   useEffect(() => {
-    socketRef.current = io();
+    setSocket(io());
 
-    socketRef.current.on("status", (status) => {
+    if (!ethEnabled()) {
+      alert(
+        "Please install an Ethereum-compatible browser or extension like MetaMask to use this dApp!"
+      );
+    }
+  }, []);
+
+  useEffect(() => {
+    if (socket == null) return;
+    socket.on("status", (status) => {
       setIpfsReady(status.ready);
       setPeerId(status.peerId || "");
       setIpfsLocation(status.location || "");
@@ -76,24 +86,23 @@ export default function Main(props) {
       setCacheStrategies(status.cacheStrategies || []);
       setPfcAbi(status.pfcAbi);
       setPfcContractAddress(status.pfcContractAddress);
+      setTokens(status.tokens);
+
+      if (walletAddress != null) socket.emit("address", walletAddress);
     });
 
-    socketRef.current.on("logs", (data) => updateLogs(data));
-
-    socketRef.current.on("tokens", (data) => setTokens(data));
-
-    if (!ethEnabled()) {
-      alert(
-        "Please install an Ethereum-compatible browser or extension like MetaMask to use this dApp!"
-      );
-    }
-
-    return () => socketRef.current.close();
-  }, []);
+    socket.on("logs", updateLogs);
+    socket.on("tokens", setTokens);
+    return () => socket.close();
+  }, [socket]);
 
   useEffect(() => {
     logsContainerRef.current.scrollTop = logsContainerRef.current.scrollHeight;
   }, [logs.length]);
+
+  useEffect(() => {
+    getWalletAddress();
+  }, [web3]);
 
   const updateLogs = (newMsg) => {
     setLogs((prevLogs) => {
@@ -114,16 +123,24 @@ export default function Main(props) {
     return false;
   };
 
+  const getWalletAddress = async () => {
+    if (web3 == null) return;
+    const accounts = await web3.eth.getAccounts();
+    if (accounts.length === 0) return;
+    setWalletAddress(accounts[0]);
+    if (socket != null) socket.emit("address", accounts[0]);
+  };
+
   const startHandler = () => {
-    socketRef.current.emit("start");
+    socket.emit("start");
   };
 
   const shutdownHandler = () => {
-    socketRef.current.emit("shutdown");
+    socket.emit("shutdown");
   };
 
   const paymentStrategyHandler = (paymentStrategy) => {
-    socketRef.current.emit("command", {
+    socket.emit("command", {
       command: "set-payment-strategy",
       args: {
         paymentStrategy,
@@ -132,7 +149,7 @@ export default function Main(props) {
   };
 
   const cacheStrategyHandler = (cacheStrategy) => {
-    socketRef.current.emit("command", {
+    socket.emit("command", {
       command: "set-cache-strategy",
       args: {
         cacheStrategy,
@@ -141,7 +158,8 @@ export default function Main(props) {
   };
 
   const submitTokensHandler = () => {
-    socketRef.current.emit("command", {
+    console.log("Submitting tokens!");
+    socket.emit("command", {
       command: "submit-tokens",
     });
   };
@@ -198,6 +216,7 @@ export default function Main(props) {
                   web3={web3}
                   pfcAbi={pfcAbi}
                   pfcContractAddress={pfcContractAddress}
+                  walletAddress={walletAddress}
                 />
               </Paper>
             </Grid>

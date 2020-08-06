@@ -1,7 +1,7 @@
 const all = require("it-all");
 const fs = require("fs").promises;
 const { multihashToCid } = require("./utils");
-const { log, error } = require('./logger');
+const { log, error } = require("./logger");
 
 /**
  * Provides utility functions for managing local CDN.
@@ -36,6 +36,21 @@ class CDNManager {
     return pinnedFiles;
   };
 
+  pinFile = (cid) => {
+    this.ipfs.pin
+      .add(cid)
+      .then(() => log(`Pinned ${cid}.`))
+      .catch(() => `Failed to pin ${cid}. ${err}`);
+  };
+
+  unpinFiles = async () => {
+    for await (const { cid } of this.ipfs.pin.ls()) {
+      this.ipfs.pin
+        .rm(cid)
+        .catch((err) => `Failed to unpin ${cid.toString()}. ${err}`);
+    }
+  };
+
   /**
    * Announce to DHT that we are providing the given `cid`.
    */
@@ -44,7 +59,7 @@ class CDNManager {
       await all(this.ipfs.dht.provide(cid, { timeout }));
       log(`Provided ${cid}.`);
     } catch (err) {
-      error(`Failed to provide ${cid}: ${err}.`);
+      console.error(`Failed to provide ${cid}: ${err}.`);
     }
   };
 
@@ -96,6 +111,7 @@ class CDNManager {
     if (store) {
       const localBlock = await this.ipfs.block.put(block.data);
       log(`Stored remote file: ${localBlock.cid}`);
+      this.pinFile(localBlock.cid);
 
       if (provide) await this.provideFile(localBlock.cid);
 

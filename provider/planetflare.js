@@ -19,6 +19,9 @@ const IPFS_LOCATION = "/tmp/ipfs-planetflare";
 // Hardcoded endpoint to claim payment
 const PUBLISHER_ENDPOINT = "http://localhost:3001";
 
+// Interval to update UI state
+const UI_UPDATE_RATE = 1500;
+
 const createIPFSNode = async (metricsEnabled) => {
   let node;
   try {
@@ -64,6 +67,7 @@ class PlanetFlare {
       if (err) console.error("Failed to read contract-address.txt", err);
       else this.contractAddress = data.trim();
     });
+    this.ioUpdater = null;
   }
 
   start = async () => {
@@ -97,13 +101,18 @@ class PlanetFlare {
       pfcContractAddress: this.contractAddress,
       tokens: this.paymentProtocol.tokens || {},
     });
+
+    // Start sending updates of node state to frontend
+    this.startIoUpdater();
   };
 
   stop = async () => {
     log("Shutting down IPFS node...");
     await this.node.stop();
-    log("Stopped IPFS node...");
+    log("Stopped IPFS node.");
     this.io.emit("status", { ready: false });
+    clearInterval(this.ioUpdater);
+    this.ioUpdater = null;
   };
 
   initProtocols = () => {
@@ -135,6 +144,18 @@ class PlanetFlare {
         new UpdatePubsub(this.node.libp2p, bucketId, hostId)
     );
     const pinnedFiles = await this.cdnManager.getPinnedFiles();
+  };
+
+  startIoUpdater = () => {
+    this.ioUpdater = setInterval(async () => {
+      this.cdnManager
+        .getPinnedFiles()
+        .then((files) => {
+          files = files.map(({ cid }) => cid.toString());
+          this.io.emit("pinned-files", files);
+        })
+        .catch(console.error);
+    }, UI_UPDATE_RATE);
   };
 
   provideBucketContents = async (bucketId) => {
@@ -185,7 +206,8 @@ class PlanetFlare {
   };
 
   handleCommand = async (command, args) => {
-    switch (command) {
+      log(command, args);
+      switch (command) {
       // Shut down node gracefully
       case "close":
         this.stop().catch((err) => {
@@ -233,8 +255,11 @@ class PlanetFlare {
         this.cdnManager.getPinnedFiles().then(console.log).catch(console.error);
         break;
 
+      case "clear-pinned":
+        this.cdnManager.unpinFiles();
+        break;
+
       default:
-        log(command, args);
         break;
     }
   };

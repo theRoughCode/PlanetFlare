@@ -137,6 +137,22 @@ class PlanetFlare {
     const pinnedFiles = await this.cdnManager.getPinnedFiles();
   };
 
+  retrieveBucketContents = async (bucketId) => {
+    const ipnsPage = `https://hub.textile.io/ipns/${bucketId}/index.json`;
+    const page = await axios.get(ipnsPage);
+    const contents = page.data.contents;
+    const cids = Object.values(contents);
+    await Promise.all(
+      cids.map(async (cid) => {
+        await this.cdnManager.retrieveFileFromRemote(
+          cid,
+          (store = true),
+          (provide = true)
+        );
+      })
+    );
+  };
+
   setWalletAddress = (walletAddress) => {
     console.log(`Setting walletAddress to ${walletAddress}`);
     this.walletAddress = walletAddress;
@@ -151,15 +167,18 @@ class PlanetFlare {
 
   submitTokensForCid = async (tokens, cid) => {
     try {
-      log(`Submitting tokens: [${tokens.join(', ')}] for cid ${cid}`);
+      log(`Submitting tokens: [${tokens.join(", ")}] for cid ${cid}`);
       const res = await axios.post(PUBLISHER_ENDPOINT + "/verify_payment", {
         tokens,
         bountyID: cid,
         recipientAddress: this.walletAddress,
       });
       const { data, signature } = res.data;
-      const { bountyID, recipient, numTokens, nonce } = data;
+      const { bountyID, numTokens, nonce } = data;
       log(`Received response from publisher: ${JSON.stringify(res.data)}`);
+      PlanetFlareContract.methods
+        .claimPayment(bountyID, numTokens, nonce, signature)
+        .send({ from: this.walletAddress });
     } catch (err) {
       error(`Failed to submit tokens. ${err}`);
     }
@@ -198,6 +217,11 @@ class PlanetFlare {
 
       case "submit-tokens":
         this.submitTokens();
+        break;
+
+      case "retrieve-bucket":
+        const { bucketId } = args;
+        this.retrieveBucketContents(bucketId);
         break;
 
       default:

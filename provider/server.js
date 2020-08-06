@@ -24,8 +24,6 @@ io.on("connect", (socket) => {
       location: planetflare.location,
       paymentStrategies: Object.keys(PAYMENT_STRATEGIES),
       cacheStrategies: Object.keys(CACHE_STRATEGIES),
-      pfcAbi: planetflare.abi,
-      pfcContractAddress: planetflare.contractAddress,
       tokens: planetflare.paymentProtocol.tokens || {},
     });
 

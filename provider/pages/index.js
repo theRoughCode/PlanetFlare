@@ -66,9 +66,8 @@ export default function Main(props) {
   const [logs, setLogs] = React.useState([]);
   const [pinned, setPinned] = React.useState([]);
   const [web3, setWeb3] = React.useState(null);
-  const [pfcAbi, setPfcAbi] = React.useState(null);
-  const [pfcContractAddress, setPfcContractAddress] = React.useState(null);
   const [walletAddress, setWalletAddress] = React.useState(null);
+  const [balance, setBalance] = React.useState(0);
   const [tokens, setTokens] = React.useState({});
   const [socket, setSocket] = React.useState(null);
   const logsContainerRef = useRef(null);
@@ -92,8 +91,6 @@ export default function Main(props) {
       setIpfsLocation(status.location || "");
       setPaymentStrategies(status.paymentStrategies || []);
       setCacheStrategies(status.cacheStrategies || []);
-      setPfcAbi(status.pfcAbi);
-      setPfcContractAddress(status.pfcContractAddress);
       setTokens(status.tokens || {});
 
       if (walletAddress != null) socket.emit("address", walletAddress);
@@ -102,6 +99,7 @@ export default function Main(props) {
     socket.on("logs", updateLogs);
     socket.on("tokens", (tokens) => setTokens(tokens || {}));
     socket.on("pinned-files", (cids) => setPinned(cids || []));
+    socket.on("balance", (balance) => setBalance(balance || 0));
     return () => socket.close();
   }, [socket]);
 
@@ -233,12 +231,7 @@ export default function Main(props) {
             {/* Current Balance */}
             <Grid item xs={12} md={4} lg={3}>
               <Paper className={fixedHeightPaper}>
-                <Balance
-                  web3={web3}
-                  pfcAbi={pfcAbi}
-                  pfcContractAddress={pfcContractAddress}
-                  walletAddress={walletAddress}
-                />
+                <Balance balance={balance} walletAddress={walletAddress} />
               </Paper>
             </Grid>
             {/* Logs */}

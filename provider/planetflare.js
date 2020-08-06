@@ -1,5 +1,6 @@
 const fs = require("fs");
 const axios = require("axios");
+const Web3 = require("web3");
 const IPFS = require("ipfs");
 const Repo = require("ipfs-repo");
 const libp2pConfig = require("./libp2p-config");
@@ -18,6 +19,9 @@ const IPFS_LOCATION = "/tmp/ipfs-planetflare";
 
 // Hardcoded endpoint to claim payment
 const PUBLISHER_ENDPOINT = "http://localhost:3001";
+
+// Hardcoded endpoint to web3
+const WEB3_ENDPOINT = "ws://localhost:8545";
 
 // Interval to update UI state
 const UI_UPDATE_RATE = 1500;
@@ -63,11 +67,19 @@ class PlanetFlare {
     this.paymentStrategy = "DEFAULT";
     this.cacheStrategy = "DEFAULT";
     this.abi = PFC.abi;
-    fs.readFile("./contract-address.txt", "utf8", (err, data) => {
-      if (err) console.error("Failed to read contract-address.txt", err);
-      else this.contractAddress = data.trim();
-    });
+    this.web3 = new Web3(WEB3_ENDPOINT);
     this.ioUpdater = null;
+    fs.readFile("./contract-address.txt", "utf8", (err, data) => {
+      if (err) {
+        console.error("Failed to read contract-address.txt", err);
+        return;
+      }
+      this.contractAddress = data.trim();
+      this.pfcContract = new this.web3.eth.Contract(
+        this.abi,
+        this.contractAddress
+      );
+    });
   }
 
   start = async () => {
@@ -97,8 +109,6 @@ class PlanetFlare {
       location: this.location,
       paymentStrategies: Object.keys(PAYMENT_STRATEGIES),
       cacheStrategies: Object.keys(CACHE_STRATEGIES),
-      pfcAbi: this.abi,
-      pfcContractAddress: this.contractAddress,
       tokens: this.paymentProtocol.tokens || {},
     });
 
@@ -147,13 +157,19 @@ class PlanetFlare {
   };
 
   startIoUpdater = () => {
-    this.ioUpdater = setInterval(async () => {
+    this.ioUpdater = setInterval(() => {
+      // Update pinned files
       this.cdnManager
         .getPinnedFiles()
         .then((files) => {
           files = files.map(({ cid }) => cid.toString());
           this.io.emit("pinned-files", files);
         })
+        .catch(console.error);
+
+      // Update PFC balance
+      this.getPfcBalance()
+        .then((balance) => this.io.emit("balance", balance))
         .catch(console.error);
     }, UI_UPDATE_RATE);
   };
@@ -197,7 +213,9 @@ class PlanetFlare {
       const { data, signature } = res.data;
       const { bountyID, numTokens, nonce } = data;
       log(`Received response from publisher: ${JSON.stringify(res.data)}`);
-      PlanetFlareContract.methods
+
+      // Claim payment
+      await this.pfcContract.methods
         .claimPayment(bountyID, numTokens, nonce, signature)
         .send({ from: this.walletAddress });
     } catch (err) {
@@ -205,9 +223,17 @@ class PlanetFlare {
     }
   };
 
+  getPfcBalance = async () => {
+    const balance = await this.pfcContract.methods
+      .balanceOf(this.walletAddress)
+      .call();
+    console.log("balance: " + balance);
+    return balance;
+  };
+
   handleCommand = async (command, args) => {
-      log(command, args);
-      switch (command) {
+    log(command, args);
+    switch (command) {
       // Shut down node gracefully
       case "close":
         this.stop().catch((err) => {
@@ -257,6 +283,10 @@ class PlanetFlare {
 
       case "clear-pinned":
         this.cdnManager.unpinFiles();
+        break;
+
+      case "get-balance":
+        this.getPfcBalance();
         break;
 
       default:

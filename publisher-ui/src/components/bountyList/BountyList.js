@@ -1,5 +1,6 @@
 import React from 'react';
 import BountyItem from '../bountyItem/BountyItem';
+import './BountyList.css'
 
 class BountyList extends React.Component {
   constructor(props) {

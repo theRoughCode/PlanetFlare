@@ -1,4 +1,4 @@
 # PlanetFlare
-<img src="./pfc-logo.gif" width="100" height="100" />
+<img src="./pfc-spin.png" width="150" height="150" />
 
 Contributors: Raphael Koh, Richard Liu, Jashan Shewakramani

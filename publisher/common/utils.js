@@ -1,3 +1,4 @@
+const abi = require('ethereumjs-abi');
 const bigInt = require('big-integer');
 
 function convertUUIDToDecimal(guid) {
@@ -7,4 +8,13 @@ function convertUUIDToDecimal(guid) {
    return bigInteger.toString();
 }
 
-module.exports = { convertUUIDToDecimal };
+function bucketIDToBountyID(web3, address, bucketID) {
+   const result = abi.soliditySHA3(
+      ['address', 'string'],
+      [address, bucketID]
+   );
+
+   return (new web3.utils.BN(result)).toString();
+}
+
+module.exports = { convertUUIDToDecimal, bucketIDToBountyID };

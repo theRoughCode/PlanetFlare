@@ -104,7 +104,7 @@ contract PlanetFlareCoin {
     function createBounty(string memory bucketID, uint256 costPerToken) public returns (uint256 id) {
         require(costPerToken > 0, "Cannot have zero cost bounty");
 
-        uint256 bountyID = uint256(keccak256(abi.encode(msg.sender, bucketID)));
+        uint256 bountyID = uint256(keccak256(abi.encodePacked(msg.sender, bucketID)));
 
         Bounty storage bounty = bountiesByID[bountyID];
         require (bountiesByID[bountyID].publisher == address(0), "Bounty already exists");

@@ -33,8 +33,8 @@ function transferPFC(from, to, amount, callback) {
     );
 }
 
-function createBounty(cid, costPerToken, deposit, callback) {
-    PlanetFlareContract.methods.createBounty(cid, costPerToken, deposit).send(
+function createBounty(cid, costPerToken, callback) {
+    PlanetFlareContract.methods.createBounty(cid, costPerToken).send(
         { from: primaryAccount.address, gas: 100000000 },
     ).then(callback)
     .catch(console.log);
@@ -78,7 +78,7 @@ function deleteBounty() {
 }
 
 // transferPFC(100, console.log);
-// createBounty('example-cid', 5, 200, function (receipt) {
+// createBounty('example-cid', 5, function (receipt) {
 //     console.log(receipt.events['BountyUpdate'].returnValues);
 // });
 

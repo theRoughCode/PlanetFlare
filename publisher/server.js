@@ -8,6 +8,7 @@ const upload = require("./common/upload");
 const PlanetFlarePublisher = require("./planetflare-publisher");
 const PublisherStore = require("./publisher-store");
 const BucketHandler = require("./bucket-handler");
+const utils = require('./common/utils');
 const PORT = 3001;
 
 let node;
@@ -66,19 +67,28 @@ app.get("/get_tokens", (req, res) => {
  */
 app.post("/verify_payment", async (req, res) => {
   const tokens = req.body.tokens;
-  const bountyID = req.body.bountyID;
+  let bountyID = req.body.bountyID;
   const recipientAddress = req.body.recipientAddress;
 
   if (!tokens) {
     res.status(400).json({ error: "No tokens provided" });
+    return;
   }
 
   if (!recipientAddress) {
     res.status(400).json({ error: "No recipient address" });
+    return;
   }
 
   if (!bountyID) {
-    res.status(400).json({ error: "No bounty ID" });
+    const bucketID = req.body.bucketID;
+    if (!bucketID) {
+      res.status(400).json({ error: "No bounty ID" });
+      return;
+    } else {
+      bountyID = utils.bucketIDToBountyID(web3, account.address, bucketID);
+      console.log(`converted bucketID ${bucketID} to ${bountyID}`);
+    }
   }
 
   let futurePayment = req.body.futurePayment;
@@ -87,6 +97,7 @@ app.post("/verify_payment", async (req, res) => {
     if (futurePayment) {
       if (!paymentManager.verifyFuturePayment(futurePayment)) {
         res.status(401).json({ error: "Invalid future payment" });
+        return;
       }
     } else {
       // TODO: optional, verify that the given bounty ID exists before continuing
@@ -108,6 +119,7 @@ app.post("/verify_payment", async (req, res) => {
     console.error(error);
     res.status(500);
     res.send(error);
+    return;
   }
 });
 

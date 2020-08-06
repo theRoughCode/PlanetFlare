@@ -10,7 +10,7 @@ Returns JSON. Keys:
 ### POST `verify_payment`
 Arguments, JSON:
 * `tokens` (required): array of tokens from `get_tokens`
-* `bountyID` (required): which bounty the token is for
+*  one of`bountyID` or `bucketID` (required): used to identify which bounty the token is for
 * `recipientAddress` (required): address of provider
 * `futurePayment` (optional): see return value for more info
 

@@ -1,0 +1,12 @@
+thead {
+    font-size: small;
+};
+
+table {
+  table-layout:fixed;
+  width:100%;
+}
+
+.bountyList {
+    width:100%;
+}

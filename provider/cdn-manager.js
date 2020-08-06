@@ -91,6 +91,7 @@ class CDNManager {
    */
   retrieveFileFromRemote = async (cid, store = false, provide = true) => {
     const block = await this.ipfs.block.get(cid);
+    log(`Retrieved remote file: ${block.cid}`);
 
     if (store) {
       const localBlock = await this.ipfs.block.put(block.data);

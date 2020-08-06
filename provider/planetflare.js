@@ -137,20 +137,20 @@ class PlanetFlare {
     const pinnedFiles = await this.cdnManager.getPinnedFiles();
   };
 
-  retrieveBucketContents = async (bucketId) => {
+  provideBucketContents = async (bucketId) => {
     const ipnsPage = `https://hub.textile.io/ipns/${bucketId}/index.json`;
     const page = await axios.get(ipnsPage);
     const contents = page.data.contents;
     const cids = Object.values(contents);
     await Promise.all(
       cids.map(async (cid) => {
-        await this.cdnManager.retrieveFileFromRemote(
-          cid,
-          (store = true),
-          (provide = true)
-        );
+        await this.cdnManager.retrieveFileFromRemote(cid, true, true);
       })
     );
+  };
+
+  provideContents = async (cid) => {
+    await this.cdnManager.retrieveFileFromRemote(cid, true, true);
   };
 
   setWalletAddress = (walletAddress) => {
@@ -219,9 +219,18 @@ class PlanetFlare {
         this.submitTokens();
         break;
 
-      case "retrieve-bucket":
-        const { bucketId } = args;
-        this.retrieveBucketContents(bucketId);
+      case "provide-bucket":
+        const bucketId = args[0];
+        this.provideBucketContents(bucketId);
+        break;
+
+      case "provide-data":
+        const cid = args[0];
+        this.provideContents(cid);
+        break;
+
+      case "ls-pinned":
+        this.cdnManager.getPinnedFiles().then(console.log).catch(console.error);
         break;
 
       default:

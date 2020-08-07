@@ -26,13 +26,11 @@ io.on("connect", (socket) => {
       cacheStrategies: Object.keys(CACHE_STRATEGIES),
       tokens: planetflare.paymentProtocol.tokens || {},
     });
-
-    socket.on(
-      "command",
-      async ({ command, args }) =>
-        await planetflare.handleCommand(command, args)
-    );
   }
+  socket.on(
+    "command",
+    async ({ command, args }) => await planetflare.handleCommand(command, args)
+  );
   socket.on("start", planetflare.start);
   socket.on("shutdown", planetflare.stop);
   socket.on("address", planetflare.setWalletAddress);

@@ -69,6 +69,7 @@ class PlanetFlare {
     this.abi = PFC.abi;
     this.web3 = new Web3(WEB3_ENDPOINT);
     this.ioUpdater = null;
+    this.cachedBuckets = JSON.parse(fs.readFileSync("cached-buckets.json"));
     fs.readFile("./contract-address.txt", "utf8", (err, data) => {
       if (err) {
         console.error("Failed to read contract-address.txt", err);
@@ -114,6 +115,7 @@ class PlanetFlare {
 
     // Start sending updates of node state to frontend
     this.startIoUpdater();
+    this.updatePinnedFiles();
   };
 
   stop = async () => {
@@ -158,20 +160,22 @@ class PlanetFlare {
 
   startIoUpdater = () => {
     this.ioUpdater = setInterval(() => {
-      // Update pinned files
-      this.cdnManager
-        .getPinnedFiles()
-        .then((files) => {
-          files = files.map(({ cid }) => cid.toString());
-          this.io.emit("pinned-files", files);
-        })
-        .catch(() => `Failed to get pinned files. ${err.message}.`);
-
       // Update PFC balance
       this.getPfcBalance()
         .then((balance) => this.io.emit("balance", balance))
         .catch(console.error);
     }, UI_UPDATE_RATE);
+  };
+
+  // Update pinned files
+  updatePinnedFiles = () => {
+    this.cdnManager
+      .getPinnedFiles()
+      .then((files) => {
+        files = files.map(({ cid }) => cid.toString());
+        this.io.emit("pinned-files", files);
+      })
+      .catch(() => `Failed to get pinned files. ${err.message}.`);
   };
 
   provideBucketContents = async (bucketId) => {
@@ -182,12 +186,20 @@ class PlanetFlare {
     await Promise.all(
       cids.map(async (cid) => {
         await this.cdnManager.retrieveFileFromRemote(cid, true, true);
+        // Store mapping from cid to bucket id
+        this.cachedBuckets[cid] = bucketId;
       })
     );
+
+    this.updatePinnedFiles();
+
+    console.log("Cached buckets: ", this.cachedBuckets);
+    fs.writeFileSync("cached-buckets.json", JSON.stringify(this.cachedBuckets));
   };
 
   provideContents = async (cid) => {
     await this.cdnManager.retrieveFileFromRemote(cid, true, true);
+    this.updatePinnedFiles();
   };
 
   setWalletAddress = (walletAddress) => {
@@ -205,20 +217,28 @@ class PlanetFlare {
   submitTokensForCid = async (tokens, cid) => {
     try {
       log(`Submitting tokens: [${tokens.join(", ")}] for cid ${cid}`);
+      if (!this.cachedBuckets.hasOwnProperty(cid)) {
+        // Try converting to v0
+        cid = cid.toV0();
+        if (!this.cachedBuckets.hasOwnProperty(cid))
+          throw `Cannot find bucket id for ${cid}!`;
+      }
+      const bucketID = this.cachedBuckets[cid];
+      console.log("bucket id: ", bucketID);
       const res = await axios.post(PUBLISHER_ENDPOINT + "/verify_payment", {
         tokens,
-        bountyID: cid,
+        bucketID,
         recipientAddress: this.walletAddress,
       });
       const { data, signature } = res.data;
       const { bountyID, numTokens, nonce } = data;
       log(`Received response from publisher: ${JSON.stringify(res.data)}`);
 
-      // Claim payment
       await this.pfcContract.methods
         .claimPayment(bountyID, numTokens, nonce, signature)
         .send({ from: this.walletAddress });
     } catch (err) {
+      console.error(err);
       error(`Failed to submit tokens. ${err}`);
     }
   };

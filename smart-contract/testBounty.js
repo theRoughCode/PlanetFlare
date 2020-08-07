@@ -82,9 +82,11 @@ function deleteBounty() {
 //     console.log(receipt.events['BountyUpdate'].returnValues);
 // });
 
-getBountyIDs(primaryAccount.address, function(error, bountyIDs) {
-    bountyIDs.forEach(id => getBounty(id, (_, r) => console.log(r)));
-});
+// getBountyIDs(primaryAccount.address, function(error, bountyIDs) {
+//     bountyIDs.forEach(id => getBounty(id, (_, r) => console.log(r)));
+// });
+
+getPrimaryBalance(console.log);
 
 // paymentChannelTest();
 

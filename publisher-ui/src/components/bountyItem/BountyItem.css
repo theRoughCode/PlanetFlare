@@ -1,3 +1,4 @@
-.bountyItem {
+tr td {
     font-size: small;
+    word-wrap: break-word;
 }

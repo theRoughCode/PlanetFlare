@@ -95,3 +95,12 @@ button:disabled {
   background: rgb(189, 189, 189);
   cursor: default;
 }
+
+thead {
+    font-size: small;
+}
+
+table {
+  table-layout:fixed;
+  width:100%;
+}

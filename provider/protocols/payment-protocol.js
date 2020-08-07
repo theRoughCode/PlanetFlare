@@ -1,4 +1,5 @@
 "use strict";
+const fs = require('fs');
 const pipe = require("it-pipe");
 const { PAYMENT_STRATEGIES } = require("../strategies/payment-strategy");
 const { log, error } = require("../logger");
@@ -15,7 +16,8 @@ class PaymentProtocol {
   constructor(io, paymentStrategy = "DEFAULT") {
     this.io = io;
     this.setPaymentStrategy(paymentStrategy);
-    this.tokens = {};
+    this.tokens = JSON.parse(fs.readFileSync("tokens.json"));
+    this.io.emit("tokens", this.tokens);
   }
 
   setPaymentStrategy = (paymentStrategy) => {
@@ -50,6 +52,8 @@ class PaymentProtocol {
           that
             .paymentStrategy({ token, cid, peerId })
             .catch((err) => error(err.message));
+
+          fs.writeFileSync("tokens.json", JSON.stringify(that.tokens));
         }
       });
 

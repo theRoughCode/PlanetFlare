@@ -1,7 +1,11 @@
 # PlanetFlare
-<img src="./pfc-spin.png" width="150" height="150" />
+<p align="center">
+  <img src="./pfc-spin.png" width="200" height="200" />
+</p>
 
 Contributors: Raphael Koh, Richard Liu, Jashan Shewakramani
+
+[Demo videp](https://youtu.be/ISwnh0dRdqw)
 
 ## Description
 With the price of storage decreasing at a much more rapid pace than network bandwidth/speed, there is a huge opportunity to leverage this cheap storage to increase page load times. With IPFS, we can reduce the impact that conglomerates have on the CDN market and empower the people to use their storage space as a CDN to earn passive income. The cheaper storage gets, the more attractive and lucrative a decentralized CDN becomes.

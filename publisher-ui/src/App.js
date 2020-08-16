@@ -10,10 +10,10 @@ class App extends React.Component {
   }
   
   async loadBlockchain() {
-    // await window.ethereum.init();
+    await window.ethereum.enable();
     window.backend = 'http://localhost:3001';
 
-    const web3 = new Web3("ws://localhost:8545");
+    const web3 = new Web3(window.ethereum || "ws://localhost:8545");
     const accounts = await web3.eth.getAccounts();
 
     const account = accounts[0];

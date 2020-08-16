@@ -2,4 +2,3 @@ node_modules
 .next
 **/build
 **/contract-address.txt
-**/web3-private-key.txt

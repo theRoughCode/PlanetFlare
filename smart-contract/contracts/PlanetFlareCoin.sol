@@ -162,7 +162,8 @@ contract PlanetFlareCoin {
         // this recreates the message that was signed on the client
         bytes32 message = prefixed(keccak256(abi.encodePacked(msg.sender, bountyID, numTokens, nonce)));
 
-        require(recoverSigner(message, signature) == owner, "Invalid signature");
+        address signer = recoverSigner(message, signature);
+        require(signer == owner, "Invalid signer");
 
         uint256 amount = numTokens * bounty.costPerToken;
 
@@ -178,11 +179,6 @@ contract PlanetFlareCoin {
             balances[receiver] += amount;
             emit Transfer(owner, receiver, amount);
         }
-        require(balances[owner] >= amount, "Owner does not have enouch cash");
-
-        balances[receiver] += amount;
-
-        emit Transfer(bounty.publisher, msg.sender, amount);
 
         return true;
     }

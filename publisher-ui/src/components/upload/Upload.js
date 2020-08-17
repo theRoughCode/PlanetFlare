@@ -31,13 +31,13 @@ class Upload extends Component {
   async loadBounties() {
     const contract = this.state.pfcContract;
 
+    let updatedState = this.state;
     const bountyIDs = await contract.methods.getBountiesForPublisher(this.state.account).call();
 
     const bounties = await Promise.all(
       bountyIDs.map(id => contract.methods.getBounty(id).call())
     )
 
-    let updatedState = this.state;
     updatedState.bounties = bounties;
     updatedState.loaded = true;
 

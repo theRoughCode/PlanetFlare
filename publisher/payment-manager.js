@@ -38,7 +38,7 @@ class PaymentManager {
     }
 
     generateSignatureHash(futurePaymentData) {
-        const recipientAddress = futurePaymentData.recipeint;
+        const recipientAddress = futurePaymentData.recipient;
         const bountyID = futurePaymentData.bountyID;
         const numTokens = futurePaymentData.numTokens;
         const nonce = futurePaymentData.nonce;
@@ -46,7 +46,7 @@ class PaymentManager {
         return '0x' + abi.soliditySHA3(
             ['address', 'uint256', 'uint256', 'uint256'],
             [recipientAddress, bountyID, numTokens, nonce]
-        )
+        ).toString('hex');
     }
 
 

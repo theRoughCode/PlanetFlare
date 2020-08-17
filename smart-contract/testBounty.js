@@ -19,11 +19,11 @@ const contractAddress = fs.readFileSync('./contract-address.txt', 'ascii').trim(
 
 let PlanetFlareContract = new web3.eth.Contract(PFCContractBuild.abi, contractAddress);
 
-var primaryAccount = web3.eth.accounts.privateKeyToAccount('0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d');
-var secondaryAccount = web3.eth.accounts.privateKeyToAccount('0x6cbed15c793ce57650b9877cf6fa156fbef513c4e6134f022a85b1ffdd59b2a1')
+const primaryAccount = web3.eth.accounts.privateKeyToAccount('0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d');
+const secondaryAccount = web3.eth.accounts.privateKeyToAccount('0x6cbed15c793ce57650b9877cf6fa156fbef513c4e6134f022a85b1ffdd59b2a1')
 
 function getPrimaryBalance(callback) {
-    PlanetFlareContract.methods.balanceOf(primaryAccount.address).call(callback);
+    PlanetFlareContract.methods.balanceOf(secondaryAccount.address).call(callback);
 }
 
 function transferPFC(from, to, amount, callback) {
@@ -49,26 +49,41 @@ function getBounty(id, callback) {
 }
 
 function paymentChannelTest() {
-    var bountyID = '88735044318772147556240327665446902972523722668274298936251860056363735820129';
-    var amount = 100;
-    var nonce = Math.floor(Math.random() * 10000000);
+    var bountyID = '45802238170530523102357169747464242402191103168447879009390383883740742693068';
+    var numTokens = 100;
+    var nonce = '472';
 
-    let signatureHash = PaymentChannel.generateSignatureHash(
-        secondaryAccount.address,
-        bountyID,
-        amount,
-        nonce
+    const futurePaymentData = {
+        recipient: secondaryAccount.address,
+        bountyID: bountyID,
+        numTokens: numTokens,
+        nonce: nonce
+    };
+
+    const newHash = PaymentChannel.generateSignatureHashNew(
+        futurePaymentData
     );
-    console.log(primaryAccount);
+    
+    const oldHash = PaymentChannel.generateSignatureHash(
+        futurePaymentData.recipient,
+        futurePaymentData.bountyID,
+        futurePaymentData.numTokens,
+        futurePaymentData.nonce
+    );
+
+    // console.log(oldHash);
+    console.log(newHash);
+
+    let signatureHash = oldHash;
 
     let signature = web3.eth.accounts.sign(signatureHash, primaryAccount.privateKey).signature;
 
-    PlanetFlareContract.methods.claimPayment(
-        bountyID,
-        amount,
-        nonce,
-        signature
-    ).send({from: secondaryAccount.address}).then(console.log).catch(console.log)
+    // PlanetFlareContract.methods.claimPayment(
+    //     bountyID,
+    //     numTokens,
+    //     nonce,
+    //     signature
+    // ).send({from: secondaryAccount.address}).then(console.log).catch(console.log)
 }
 
 function deleteBounty() {

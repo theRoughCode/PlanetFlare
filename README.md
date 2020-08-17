@@ -25,6 +25,10 @@ This project consists of 3 components:
 1. Provider (serves assets)
 The Provider node is a custom wrapper around IPFS and Libp2p with a dashboard made in React. The backend IPFS node and the dashboard communicate over Socket.io. The node also communicates to the ethereum chain via Metamask and Web3. The Provider node allows the user to create custom caching strategies and listens in on incoming requests from the DHT and Bitswap (via the corresponding libp2p protocols). This allows users to create dynamic strategies that depend on statistics, such as frequency of incoming requested data.
 
+<p align="center">
+    <img src="./screenshot.jpg" width="600">
+</p>
+
 2. Client (queries for assets)
 For the Client's webpage to use assets from Planetflare, they just have to install a custom JavaScript script into their webpage. This creates an in-browser IPFS node that queries for IPFS content in the webpage. Additionally, we are using a custom forked version of IPFS in which we are querying the Bitswap ledger to figure out which Provider served us content so we can reward them.
 

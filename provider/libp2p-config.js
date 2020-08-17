@@ -37,10 +37,7 @@ const libp2pConfig = (metricsEnabled = false) => (opts) => {
   return new Libp2p({
     peerId,
     addresses: {
-      listen: [
-        '/ip4/0.0.0.0/tcp/0',
-        '/ip4/0.0.0.0/tcp/0/ws',
-      ]
+      listen: ['/ip4/127.0.0.1/tcp/8000/ws']
     },
     modules: {
       transport: [ TCP, Websockets ],

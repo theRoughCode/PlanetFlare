@@ -2,7 +2,6 @@ import React from 'react';
 import './App.css';
 import Web3 from 'web3';
 import Upload from './components/upload/Upload';
-import BountyList from './components/bountyList/BountyList';
 
 class App extends React.Component {
   componentWillMount() {
@@ -10,7 +9,9 @@ class App extends React.Component {
   }
   
   async loadBlockchain() {
-    await window.ethereum.enable();
+    if (window.ethereum) {
+      await window.ethereum.enable();
+    }
     window.backend = 'http://localhost:3001';
 
     const web3 = new Web3(window.ethereum || "ws://localhost:8545");
@@ -51,9 +52,9 @@ class App extends React.Component {
     if(!this.state.loaded) return null;
     return (
       <div className="App">
-        <div className="Card">
+        {/* <div className="Card">
           <p className="accountBalanceLabel:">Account balance: {this.state.accountBalance}</p>
-        </div>
+        </div> */}
         <div className="Card">
           <Upload setBucketId={this.setBucketId}
             pfcContract={this.state.pfcContract}

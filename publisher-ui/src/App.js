@@ -3,6 +3,41 @@ import './App.css';
 import Web3 from 'web3';
 import Upload from './components/upload/Upload';
 
+import { withStyles } from "@material-ui/core/styles";
+import CssBaseline from "@material-ui/core/CssBaseline";
+import AppBar from "@material-ui/core/AppBar";
+import Toolbar from "@material-ui/core/Toolbar";
+import Typography from "@material-ui/core/Typography";
+
+const useStyles = theme => ({
+  appBar: {
+    zIndex: theme.zIndex.drawer + 1,
+    transition: theme.transitions.create(["width", "margin"], {
+      easing: theme.transitions.easing.sharp,
+      duration: theme.transitions.duration.leavingScreen,
+    }),
+  },
+  appBarSpacer: theme.mixins.toolbar,
+  content: {
+    flexGrow: 1,
+    height: "100vh",
+    overflow: "auto",
+  },
+  paper: {
+    padding: theme.spacing(2),
+    display: "flex",
+    overflow: "auto",
+    flexDirection: "column",
+  },
+  fixedHeight: {
+    height: 280,
+  },
+  logo: {
+    height: 45,
+    marginRight: 10,
+  },
+});
+
 class App extends React.Component {
   componentWillMount() {
     this.loadBlockchain();
@@ -49,12 +84,25 @@ class App extends React.Component {
   }
 
   render() {
+    const { classes } = this.props;
     if(!this.state.loaded) return null;
     return (
       <div className="App">
-        {/* <div className="Card">
-          <p className="accountBalanceLabel:">Account balance: {this.state.accountBalance}</p>
-        </div> */}
+        <CssBaseline />
+        <AppBar position="absolute" className={classes.appBar}>
+          <Toolbar>
+            <img src={"pfc-logo.png"} className={classes.logo} alt="logo" />
+            <Typography
+              component="h1"
+              variant="h6"
+              color="inherit"
+              noWrap
+              className={classes.title}
+            >
+              Publisher Dashboard
+            </Typography>
+          </Toolbar>
+        </AppBar>
         <div className="Card">
           <Upload setBucketId={this.setBucketId}
             pfcContract={this.state.pfcContract}
@@ -66,4 +114,4 @@ class App extends React.Component {
   }
 }
 
-export default App;
+export default withStyles(useStyles)(App);

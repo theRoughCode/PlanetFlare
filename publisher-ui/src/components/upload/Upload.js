@@ -198,7 +198,7 @@ class Upload extends Component {
 
     return (
       <div className="Upload">
-        <span className="Title">Create Bounty</span>
+        <div className="Title">Publish Bucket</div>
         <div className="Content">
           <div>
             <Dropzone

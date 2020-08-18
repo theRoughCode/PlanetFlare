@@ -189,6 +189,7 @@ export default function Main(props) {
   return (
     <div>
       <Head>
+        <title>PlanetFlare Provider</title>
         <link rel="shortcut icon" href="/favicon.ico" />
       </Head>
       <CssBaseline />

@@ -44,7 +44,9 @@ const onReceiveBlock = (bitswap) => (peerId, block, exists) => {
 };
 
 const rewardProviders = (cid) => {
-  const providers = providerManager.get(cid);
+  // TODO: Remove below hack to reward provider for demo
+  // const providers = providerManager.get(cid);
+  providers = [providerPeerId];
   if (providers == null || providers.length === 0) return;
 
   Object.keys(providers).forEach((peerId) =>

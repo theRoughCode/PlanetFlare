@@ -13,8 +13,8 @@ const BITSWAP120 = "/ipfs/bitswap/1.2.0";
 
 const protocols = [
   // Listen in on bitswap protocol
-  // BITSWAP120,
-  // BITSWAP110,
+  BITSWAP120,
+  BITSWAP110,
   BITSWAP100,
   // Listen in on KAD DHT protocol
   KadDHT.multicodec,

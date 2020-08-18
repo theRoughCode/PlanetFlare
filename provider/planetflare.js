@@ -128,11 +128,12 @@ class PlanetFlare {
   };
 
   initProtocols = () => {
-    // Enable cache protocol
-    this.cacheProtocol = new CacheProtocol(this.cdnManager, this.cacheStrategy);
-    this.cacheProtocol.PROTOCOLS.forEach((protocol) =>
-      this.node.libp2p.handle(protocol, this.cacheProtocol.handler)
-    );
+    // TODO: Uncomment below to start listening in on DHT and Bitswap protocols
+    // // Enable cache protocol
+    // this.cacheProtocol = new CacheProtocol(this.cdnManager, this.cacheStrategy);
+    // this.cacheProtocol.PROTOCOLS.forEach((protocol) =>
+    //   this.node.libp2p.handle(protocol, this.cacheProtocol.handler)
+    // );
 
     // Enable payment protocol
     this.paymentProtocol = new PaymentProtocol(this.io, this.paymentStrategy);

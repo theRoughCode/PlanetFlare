@@ -2,6 +2,10 @@
 
 const PUBLISHER_NAME = `${location.hostname}` || "localhost:3001"; // Replace with publisher's API gateway.
 const LOCAL_STORAGE_PFC_TOKENS = "pfc-tokens";
+
+const providerPeerId = "QmTsQX3nh4CSeUsDfJfmxDhX3annE72iycnwxFVSm3tBhi";
+const port = "8000";
+
 let remainingTokens =
   JSON.parse(localStorage.getItem(LOCAL_STORAGE_PFC_TOKENS)) || [];
 let ipfs = null;
@@ -49,6 +53,9 @@ const rewardProviders = (cid) => {
 
   // Once rewarded, remove to prevent buildup of stale data
   providerManager.remove(cid);
+
+  // Remove from localstorage
+  localStorage.setItem(LOCAL_STORAGE_PFC_TOKENS, JSON.stringify(remainingTokens));
 };
 
 const rewardProvider = async (peerId, numBlocksServed, cid) => {
@@ -125,8 +132,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   ipfs = await IPFS.create();
 
   // Hack to ensure we're connected to server node
-  const providerPeerId = "QmTsQX3nh4CSeUsDfJfmxDhX3annE72iycnwxFVSm3tBhi";
-  const port = "8000";
   const serverAddr = `/ip4/127.0.0.1/tcp/${port}/ws/p2p/${providerPeerId}`;
   await ipfs.swarm.connect(serverAddr);
 

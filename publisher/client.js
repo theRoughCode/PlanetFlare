@@ -125,7 +125,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   ipfs = await IPFS.create();
 
   // Hack to ensure we're connected to server node
-  const providerPeerId = "QmTsQX3nh4CSeUsDfJfmxDhX3annE72iycnwxFVSm3tBhi";
+  const providerPeerId = "QmU7XihoWwFgT8tko1VfxNuDPjmczBYnbnWHQ7TTK4wDVZ";
   const port = "8000";
   const serverAddr = `/ip4/127.0.0.1/tcp/${port}/ws/p2p/${providerPeerId}`;
   await ipfs.swarm.connect(serverAddr);

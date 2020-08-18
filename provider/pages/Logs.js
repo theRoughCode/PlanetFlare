@@ -6,6 +6,7 @@ const useStyles = makeStyles({
   text: {
     fontFamily: "Monospace",
     wordBreak: "break-word",
+    fontSize: 20,
   },
   log: {
     color: "white",

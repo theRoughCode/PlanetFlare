@@ -10,15 +10,7 @@ import Paper from '@material-ui/core/Paper';
 import './BountyTable.css';
 
 
-function createData(name, calories, fat, carbs, protein) {
-  return { name, calories, fat, carbs, protein };
-}
-
 class BountyTable extends Component {
-  constructor(props) {
-    super(props);
-  }
-
   render() {
     return (
       <TableContainer component={Paper}>

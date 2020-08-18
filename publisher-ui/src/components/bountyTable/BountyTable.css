@@ -1,3 +1,8 @@
 .table {
     minWidth: 650px;
 }
+
+tr td {
+    font-size: small;
+    word-wrap: break-word;
+}

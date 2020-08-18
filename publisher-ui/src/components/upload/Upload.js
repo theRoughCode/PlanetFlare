@@ -2,7 +2,6 @@ import React, { Component } from "react";
 import Dropzone from "../dropzone/Dropzone";
 import "./Upload.css";
 import Progress from "../progress/Progress";
-import BountyItem from '../bountyItem/BountyItem';
 import BountyTable from '../bountyTable/BountyTable';
 
 class Upload extends Component {
@@ -45,12 +44,9 @@ class Upload extends Component {
   }
 
   async createBounty(bucketID) {
-    // TOOD: Richard, upload bucket to Textile and give me the bucketID and costPerToken
-
     // TODO: don't hardcode this and expose a UI for the user to specify this
     let costPerToken = 1;
 
-    console.log(this.state);
     const PlanetFlareContract = this.state.pfcContract;
 
     PlanetFlareContract.methods.createBounty(bucketID, costPerToken).send({
@@ -67,10 +63,20 @@ class Upload extends Component {
 
   async uploadFiles() {
     this.setState({ uploadProgress: {}, uploading: true });
+
     try {
-      const res = await this.sendRequest(this.state.files);
+      //const res = (await Promise.all(promises))[0];
+      const res = await this.sendBulkRequest(this.state.files);
+      const copy = { ...this.state.uploadProgress }
+
+      for (let i = 0; i < this.state.files.length; ++i) {
+        const file = this.state.files[i];
+        copy[file.name] = { state: 'done', percentage: 100 }
+      }
       const bucketId = (await res.json()).bucketId;
-      console.log(bucketId);
+
+      this.setState({ uploadProgress: copy });
+      console.log(`Created bucket with id ${bucketId}`);
       this.createBounty(bucketId);
       this.setState({ successfulUploaded: true, uploading: false });
     } catch (e) {
@@ -79,7 +85,47 @@ class Upload extends Component {
     }
   }
 
-  sendRequest(files) {
+  sendRequest(file) {
+    return new Promise((resolve, reject) => {
+      const req = new XMLHttpRequest();
+
+      req.upload.addEventListener("progress", event => {
+        if (event.lengthComputable) {
+          const copy = { ...this.state.uploadProgress };
+          copy[file.name] = {
+            state: "pending",
+            percentage: (event.loaded / event.total) * 100
+          };
+          this.setState({ uploadProgress: copy });
+        }
+      });
+
+      req.upload.addEventListener("load", event => {
+        const copy = { ...this.state.uploadProgress };
+        copy[file.name] = { state: "done", percentage: 100 };
+        this.setState({ uploadProgress: copy });
+        resolve(req.response);
+      });
+
+      req.upload.addEventListener("error", event => {
+        const copy = { ...this.state.uploadProgress };
+        copy[file.name] = { state: "error", percentage: 0 };
+        this.setState({ uploadProgress: copy });
+        reject(req.response);
+      });
+
+      const formData = new FormData();
+      formData.append("file", file, file.name);
+
+      req.open("POST", "http://localhost:3001/upload");
+      req.setRequestHeader('Content-Type', 'application/json')
+      req.send(JSON.stringify({
+        files: [file.name]
+      }));
+    });
+  }
+
+  sendBulkRequest(files) {
     const response = fetch("http://localhost:3001/upload", {
       method: 'POST',
       headers: {
@@ -100,7 +146,7 @@ class Upload extends Component {
           <img
             className="CheckIcon"
             alt="done"
-            src="pfc-logo-24.gif"
+            src="check.svg"
             style={{
               opacity:
                 uploadProgress && uploadProgress.state === "done" ? 0.5 : 0
@@ -133,47 +179,6 @@ class Upload extends Component {
       );
     }
   }
-
-  // renderBountyList() {
-  //   if (!this.state.loaded) return null;
-
-  //     // <BountyItem 
-  //     //   key={bounty[0]}
-  //     //   className="bountyItem"
-  //     //   id={bounty[0]}
-  //     //   publisher={bounty[1]}
-  //     //   bucketID={bounty[2]}
-  //     //   costPerToken={bounty[3]}
-  //     //   lastUpdated={bounty[4]}
-  //     // >
-  //     // </BountyItem>
-  //   );
-
-  //   // let bodyItem;
-  //   // if (bountyItems.length > 0) {
-  //   //   bodyItem = (<table>
-  //   //     <thead>
-  //   //       <tr>
-  //   //         <th>Bounty ID</th>
-  //   //         <th>Publisher Address</th>
-  //   //         <th>Bucket ID</th>
-  //   //         <th>Cost per token</th>
-  //   //       </tr>
-  //   //     </thead>
-  //   //     <tbody>
-  //   //       {bountyItems}
-  //   //     </tbody>
-  //   //   </table>);
-  //   // }
-  //   // else
-  //   //   bodyItem = (<p className="emptyBountyList">No Bounties :(</p>);
-
-  //   // return (
-  //   //   <div className="bountyList">
-  //   //     {bodyItem}
-  //   //   </div>
-  //   // );
-  // }
 
   render() {
     let bountyItems = null;

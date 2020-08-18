@@ -4,10 +4,8 @@ global.WebSocket = require("isomorphic-ws");
 const express = require("express");
 const uuid = require("uuid");
 const cors = require("cors");
-const upload = require("./common/upload");
 const PlanetFlarePublisher = require("./planetflare-publisher");
 const PublisherStore = require("./publisher-store");
-const BucketHandler = require("./bucket-handler");
 const utils = require('./common/utils');
 const PORT = 3001;
 
@@ -16,9 +14,7 @@ let publisherStore;
 
 const web3 = require("./ethereum").getWeb3Instance();
 const account = require("./ethereum").getUnlockedAccount(web3);
-const PlanetFlareContract = require("./ethereum").getPlanetFlareContract(web3);
 const PaymentManager = require("./payment-manager");
-const { Database } = require("@textile/hub");
 const paymentManager = new PaymentManager(web3, account);
 
 const app = express();

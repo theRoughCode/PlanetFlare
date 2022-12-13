@@ -16,7 +16,7 @@
     "big-integer": "^1.6.48",
     "cors": "^2.8.5",
     "ethereumjs-abi": "^0.6.8",
-    "express": "^4.17.1",
+    "express": "^4.17.3",
     "formidable": "^1.2.2",
     "ipfs": "git+ssh://git@github.com/theRoughCode/js-ipfs.git#ledger-for-peer",
     "isomorphic-ws": "^4.0.1",
